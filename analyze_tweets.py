@@ -9,6 +9,7 @@ BIDEN_CSV = "biden_tweets.csv"
 
 
 def score_tweet(text: str) -> int:
+    # TODO found a
     text_lower = str(text).lower()
 
     is_trump = any(kw in text_lower for kw in TRUMP_KEYWORDS)
