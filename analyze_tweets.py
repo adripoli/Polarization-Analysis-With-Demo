@@ -34,6 +34,15 @@ def main():
     print(f"Neutral (0) tweets: {n_neutral} / {len(df)} "
           f"({100 * n_neutral / len(df):.1f}%)")
 
+    user_scores = df.groupby("user_id")["score"].agg(["mean", "std", "count"])
+    user_scores = user_scores.sort_values("std", ascending=False)
+
+    print("\nMost 'varied' users (highest std of score):")
+    print(user_scores.head(10))
+
+    user_scores.to_csv("user_scores.csv")
+    print("\nSaved per-user scores to user_scores.csv")
+
 
 if __name__ == "__main__":
     main()
