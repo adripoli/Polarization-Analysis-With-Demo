@@ -1,4 +1,4 @@
-# heads up keyword
+# analyze_tweets py first
 
 import pandas as pd
 
