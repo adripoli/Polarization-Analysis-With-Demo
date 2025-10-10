@@ -22,7 +22,7 @@ def score_tweet(text: str) -> int:
 
     base_score = 1 if is_trump else -1
 
-    # those MAGA people
+    # does the tweet
     has_negative = any(adj in text_lower for adj in NEGATIVE_ADJECTIVES)
     has_positive = any(adj in text_lower for adj in POSITIVE_ADJECTIVES)
 
