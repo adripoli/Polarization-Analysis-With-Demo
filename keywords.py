@@ -7,6 +7,10 @@ TRUMP_KEYWORDS = [
     "maga2020", "trumpsupporter", "backtrump", "trump won", "voteredtosaveamerica",
     "trump2020landslide", "walkaway", "lawandorder", "patriotsunite",
     "trumpisright", "presidenttrump", "45", "kag2020",
+    # bulked out with
+    "trump45", "trumpforce1", "potus45", "trumprally", "voteredsavesamerica",
+    "trumpismypresident", "istandwithtrump", "trump2020tosaveamerica",
+    "maga4trump", "trumpwontagain", "americafirst2020", "trumptrain2020",
 ]
 
 BIDEN_KEYWORDS = [
@@ -17,4 +21,8 @@ BIDEN_KEYWORDS = [
     "bidenharris", "votebluetoendthisnightmare", "votehimout",
     "trumpisnotmypresident", "dumptrump", "trumpoutnow", "byedon",
     "bidenpresident", "harrisbiden", "vote blue",
+    # bulked out with
+    "bidenharris2020landslide", "teamjoebiden", "joebidenforpresident",
+    "bluewave", "votebiden2020", "bidennow", "notmypresidentrump",
+    "trumplost", "istandwithbiden", "bidenharriswin",
 ]
