@@ -3,23 +3,30 @@
 import pandas as pd
 
 from keywords import TRUMP_KEYWORDS, BIDEN_KEYWORDS
+from adjectives import NEGATIVE_ADJECTIVES
 
 TRUMP_CSV = "trump_tweets.csv"
 BIDEN_CSV = "biden_tweets.csv"
 
 
 def score_tweet(text: str) -> int:
-    # TODO found a
     text_lower = str(text).lower()
 
     is_trump = any(kw in text_lower for kw in TRUMP_KEYWORDS)
     is_biden = any(kw in text_lower for kw in BIDEN_KEYWORDS)
 
-    if is_trump and not is_biden:
-        return 1
-    if is_biden and not is_trump:
-        return -1
-    return 0  # no keyword or
+    if is_trump and is_biden:
+        return 0  # mentions both no
+    if not is_trump and not is_biden:
+        return 0  # no keyword at
+
+    base_score = 1 if is_trump else -1
+
+    # those MAGA people
+    has_negative = any(adj in text_lower for adj in NEGATIVE_ADJECTIVES)
+    if has_negative:
+        return -base_score
+    return base_score
 
 
 def main():
