@@ -20,6 +20,17 @@ def _find_indices(tokens: list, vocabulary: list) -> list:
     return [i for i, tok in enumerate(tokens) if tok in vocabulary]
 
 
+def _nearest_adjective_weight(keyword_idx: int, adjective_indices: list) -> float:
+    """weight of the"""
+    if not adjective_indices:
+        return 0.0
+
+    nearest_idx = min(adjective_indices, key=lambda i: abs(i - keyword_idx))
+    distance = abs(nearest_idx - keyword_idx)
+
+    return 1.0 / distance
+
+
 def score_tweet(text: str) -> int:
     text_lower = str(text).lower()
 
