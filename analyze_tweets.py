@@ -1,5 +1,7 @@
 # analyze_tweets py first
 
+import re
+
 import pandas as pd
 
 from keywords import TRUMP_KEYWORDS, BIDEN_KEYWORDS
@@ -7,6 +9,15 @@ from adjectives import POSITIVE_ADJECTIVES, NEGATIVE_ADJECTIVES
 
 TRUMP_CSV = "trump_tweets.csv"
 BIDEN_CSV = "biden_tweets.csv"
+
+
+def _tokenize(text: str) -> list:
+    return re.findall(r"[a-z0-9']+", text.lower())
+
+
+def _find_indices(tokens: list, vocabulary: list) -> list:
+    """indices of tokens"""
+    return [i for i, tok in enumerate(tokens) if tok in vocabulary]
 
 
 def score_tweet(text: str) -> int:
