@@ -28,7 +28,7 @@ def _nearest_adjective_weight(keyword_idx: int, adjective_indices: list) -> floa
     nearest_idx = min(adjective_indices, key=lambda i: abs(i - keyword_idx))
     distance = abs(nearest_idx - keyword_idx)
 
-    return 1.0 / distance
+    return 1.0 / (1 + distance)
 
 
 def score_tweet(text: str) -> int:
