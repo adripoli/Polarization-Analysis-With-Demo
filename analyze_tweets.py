@@ -10,6 +10,8 @@ from adjectives import POSITIVE_ADJECTIVES, NEGATIVE_ADJECTIVES
 TRUMP_CSV = "trump_tweets.csv"
 BIDEN_CSV = "biden_tweets.csv"
 
+MAX_ADJECTIVE_DISTANCE = 6  # words past this
+
 
 def _tokenize(text: str) -> list:
     return re.findall(r"[a-z0-9']+", text.lower())
@@ -21,12 +23,15 @@ def _find_indices(tokens: list, vocabulary: list) -> list:
 
 
 def _nearest_adjective_weight(keyword_idx: int, adjective_indices: list) -> float:
-    """weight of the"""
+    """signed weight for"""
     if not adjective_indices:
         return 0.0
 
     nearest_idx = min(adjective_indices, key=lambda i: abs(i - keyword_idx))
     distance = abs(nearest_idx - keyword_idx)
+
+    if distance > MAX_ADJECTIVE_DISTANCE:
+        return 0.0
 
     return 1.0 / (1 + distance)
 
