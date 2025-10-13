@@ -1,4 +1,4 @@
-# analyze_tweets py first
+# analyze_tweets py third
 
 import re
 
@@ -89,6 +89,8 @@ def main():
 
     user_scores.to_csv("user_scores.csv")
     print("\nSaved per-user scores to user_scores.csv")
+
+    # still broken on
 
 
 if __name__ == "__main__":
