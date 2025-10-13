@@ -37,25 +37,35 @@ def _nearest_adjective_weight(keyword_idx: int, adjective_indices: list) -> floa
 
 
 def score_tweet(text: str) -> int:
-    text_lower = str(text).lower()
+    tokens = _tokenize(text)
 
-    is_trump = any(kw in text_lower for kw in TRUMP_KEYWORDS)
-    is_biden = any(kw in text_lower for kw in BIDEN_KEYWORDS)
+    trump_idx = _find_indices(tokens, TRUMP_KEYWORDS)
+    biden_idx = _find_indices(tokens, BIDEN_KEYWORDS)
 
-    if is_trump and is_biden:
-        return 0  # mentions both no
-    if not is_trump and not is_biden:
-        return 0  # no keyword at
+    if not trump_idx and not biden_idx:
+        return 0
 
-    base_score = 1 if is_trump else -1
+    positive_idx = _find_indices(tokens, POSITIVE_ADJECTIVES)
+    negative_idx = _find_indices(tokens, NEGATIVE_ADJECTIVES)
 
-    # does the tweet
-    has_negative = any(adj in text_lower for adj in NEGATIVE_ADJECTIVES)
-    has_positive = any(adj in text_lower for adj in POSITIVE_ADJECTIVES)
+    raw_score = 0.0
 
-    if has_negative and not has_positive:
-        return -base_score
-    return base_score
+    # each keyword hit
+    for idx in trump_idx:
+        pos_w = _nearest_adjective_weight(idx, positive_idx)
+        neg_w = _nearest_adjective_weight(idx, negative_idx)
+        raw_score += 1.0 if pos_w >= neg_w else -1.0
+
+    for idx in biden_idx:
+        pos_w = _nearest_adjective_weight(idx, positive_idx)
+        neg_w = _nearest_adjective_weight(idx, negative_idx)
+        raw_score += -1.0 if pos_w >= neg_w else 1.0
+
+    if raw_score > 0:
+        return 1
+    if raw_score < 0:
+        return -1
+    return 0
 
 
 def main():
