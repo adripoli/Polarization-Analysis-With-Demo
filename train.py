@@ -3,22 +3,24 @@
 # fine-tunes the BERTweet classifier on the ~1000 hand-labeled tweets
 # (data/manual_labels.csv, columns: cleaned_text, label)
 #
-# first pass: freezing the BERTweet encoder and only training the
-# classifier head on top - figured that'd be enough given the encoder is
-# already pretrained on tweets
+# freezing the encoder and only training the head didn't work (train loss
+# stuck at random-chance) - so now training the whole encoder + head
+# together, on gpu if there's one available
 
 import torch
 import pandas as pd
 from torch import nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
+from tqdm import tqdm
 
 from model import BERTweetStanceClassifier, load_tokenizer, tokenize_batch
 
 MANUAL_LABELS_CSV = "data/manual_labels.csv"
 
-BATCH_SIZE = 16
-EPOCHS = 5
-LEARNING_RATE = 1e-3
+BATCH_SIZE = 32
+EPOCHS = 3
+LEARNING_RATE = 2e-5
+TRAIN_SPLIT = 0.8
 
 
 class TweetDataset(Dataset):
@@ -41,7 +43,7 @@ class TweetDataset(Dataset):
         return item
 
 
-def train_model():
+def train_model(device):
     print("Loading manually labelled tweets...")
     labelled_df = pd.read_csv(MANUAL_LABELS_CSV)
 
@@ -57,24 +59,30 @@ def train_model():
         tokenizer,
         labelled_df["label"].tolist(),
     )
-    train_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
-    model = BERTweetStanceClassifier()
+    # train loss was collapsing to ~0 within an epoch while val loss kept
+    # climbing - classic overfitting on ~800 examples. added this split so
+    # there's at least a signal for it, and bumped the head's dropout to
+    # help
+    n_train = int(len(dataset) * TRAIN_SPLIT)
+    n_val = len(dataset) - n_train
+    train_set, val_set = random_split(dataset, [n_train, n_val])
 
-    # freeze the encoder - it's already pretrained on tweets, just train
-    # the small head on top of it
-    model.encoder.requires_grad_(False)
+    train_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(val_set, batch_size=BATCH_SIZE)
 
+    model = BERTweetStanceClassifier().to(device)
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.AdamW(model.classifier.parameters(), lr=LEARNING_RATE)
+    # whole model this time, not just the classifier head
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 
     for epoch in range(EPOCHS):
         model.train()
         total_loss = 0
-        for batch in train_loader:
-            input_ids = batch["input_ids"]
-            attention_mask = batch["attention_mask"]
-            labels = batch["label"]
+        for batch in tqdm(train_loader, desc=f"Epoch {epoch + 1}/{EPOCHS}"):
+            input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+            labels = batch["label"].to(device)
 
             optimizer.zero_grad()
             output = model(input_ids, attention_mask)
@@ -85,14 +93,10 @@ def train_model():
 
         print(f"Epoch {epoch + 1}: train_loss={total_loss / len(train_loader):.4f}")
 
-    # train loss is stuck around 0.69 (basically ln(2), i.e. random-chance
-    # for 2 classes) no matter how many epochs this runs for. a frozen
-    # BERTweet's [CLS] embedding clearly isn't linearly separable enough on
-    # its own for the small head to do anything with it - probably need to
-    # actually fine-tune the encoder, not just the head
-
     return model
 
 
 if __name__ == "__main__":
-    train_model()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    train_model(device)

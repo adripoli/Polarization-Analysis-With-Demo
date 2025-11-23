@@ -40,7 +40,7 @@ class BERTweetStanceClassifier(nn.Module):
     def __init__(self):
         super().__init__()
         self.encoder = AutoModel.from_pretrained(BERTWEET_MODEL)
-        self.dropout = nn.Dropout(0.1)
+        self.dropout = nn.Dropout(0.3)
         self.classifier = nn.Sequential(
             nn.Linear(768, 256),
             nn.ReLU(),
