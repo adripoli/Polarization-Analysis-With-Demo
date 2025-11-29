@@ -1,11 +1,17 @@
 # train.py
 #
-# fine-tunes the BERTweet classifier on the ~1000 hand-labeled tweets
-# (data/manual_labels.csv, columns: cleaned_text, label)
+# fine-tunes the BERTweet classifier on 1000 hand-labeled tweets
+# (data/manual_labels.csv, columns: cleaned_text, label), then runs it on
+# every tweet in trump_tweets.csv / biden_tweets.csv and works out a
+# mean/std stance score per user
 #
-# freezing the encoder and only training the head didn't work (train loss
-# stuck at random-chance) - so now training the whole encoder + head
-# together, on gpu if there's one available
+# way better than the keyword approach - actually gets context, sarcasm
+# (mostly), no hand-built keyword list needed
+#
+# known issue: the most "polarized" users by this (lowest std) are often
+# just spam accounts posting the same promo tweet over and over. zero
+# variation isn't the same as a real, strong opinion, but the model can't
+# tell the difference yet
 
 import torch
 import pandas as pd
@@ -15,6 +21,8 @@ from tqdm import tqdm
 
 from model import BERTweetStanceClassifier, load_tokenizer, tokenize_batch
 
+TRUMP_CSV = "trump_tweets.csv"
+BIDEN_CSV = "biden_tweets.csv"
 MANUAL_LABELS_CSV = "data/manual_labels.csv"
 
 BATCH_SIZE = 32
@@ -60,10 +68,6 @@ def train_model(device):
         labelled_df["label"].tolist(),
     )
 
-    # train loss was collapsing to ~0 within an epoch while val loss kept
-    # climbing - classic overfitting on ~800 examples. added this split so
-    # there's at least a signal for it, and bumped the head's dropout to
-    # help
     n_train = int(len(dataset) * TRAIN_SPLIT)
     n_val = len(dataset) - n_train
     train_set, val_set = random_split(dataset, [n_train, n_val])
@@ -73,7 +77,6 @@ def train_model(device):
 
     model = BERTweetStanceClassifier().to(device)
     loss_fn = nn.CrossEntropyLoss()
-    # whole model this time, not just the classifier head
     optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 
     for epoch in range(EPOCHS):
@@ -96,7 +99,51 @@ def train_model(device):
     return model
 
 
-if __name__ == "__main__":
+def score_all_tweets(model, device):
+    trump_df = pd.read_csv(TRUMP_CSV)
+    biden_df = pd.read_csv(BIDEN_CSV)
+    df = pd.concat([trump_df, biden_df], ignore_index=True)
+    df = df.dropna(subset=["tweet", "user_id"])
+
+    tokenizer = load_tokenizer()
+    dataset = TweetDataset(df["tweet"].astype(str).tolist(), tokenizer)
+    loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
+
+    stances = []
+    model.eval()
+    with torch.no_grad():
+        for batch in tqdm(loader, desc="Scoring all tweets"):
+            input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+            output = model(input_ids, attention_mask)
+            stances.extend(output["stance"].cpu().numpy().tolist())
+
+    df["stance"] = stances
+    return df
+
+
+def aggregate_users(scored_df):
+    user_df = scored_df.groupby("user_id")["stance"].agg(["mean", "std", "count"])
+    # lowest std = "most polarized" but a lot of these are spam accounts
+    # posting identical stuff, not genuinely consistent opinions. need to
+    # filter those out somehow
+    user_df = user_df.sort_values("std")
+    return user_df
+
+
+def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
-    train_model(device)
+
+    model = train_model(device)
+    scored_df = score_all_tweets(model, device)
+    user_df = aggregate_users(scored_df)
+
+    print("\nMost 'polarized' users (lowest stance std):")
+    print(user_df.head(10))
+
+    user_df.to_csv("user_scores.csv")
+
+
+if __name__ == "__main__":
+    main()

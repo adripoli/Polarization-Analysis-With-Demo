@@ -15,10 +15,6 @@ NUM_LABELS = 2  # 0 = pro-biden, 1 = pro-trump
 
 
 def load_tokenizer():
-    # heads up: BERTweet doesn't ship a fast tokenizer file, so the default
-    # AutoTokenizer fast path was silently falling back to something that
-    # mis-splits hashtags/emoji instead of erroring - use_fast=False forces
-    # the actual BERTweet tokenizer
     return AutoTokenizer.from_pretrained(BERTWEET_MODEL, use_fast=False)
 
 

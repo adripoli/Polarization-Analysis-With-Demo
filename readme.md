@@ -1,22 +1,21 @@
-# Political Polarization Scorer
+# Political Polarization Classifier
 
-a first pass at guessing how polarized twitter/X users were during the 2020 election, using keyword matching plus distance-weighted adjective sentiment.
+fine-tunes [BERTweet](https://huggingface.co/vinai/bertweet-base) (pretrained on 850M tweets) to classify tweets as pro-biden or pro-trump, replacing the keyword/adjective heuristics that hit their ceiling on sarcasm and bad grammar.
 
 ## How It Works
 
-give it two csvs of tweets - one pulled via `#trump`-ish hashtags, one via `#biden`-ish hashtags - and it:
-
-1. tokenizes each tweet and finds keyword hits at the word level (`keywords.py`)
-2. for each keyword hit, finds the *nearest* positive/negative adjective (`adjectives.py`) within `MAX_ADJECTIVE_DISTANCE` (6 words) and weights it by `1 / (1 + distance)` - so a stray adjective describing a different candidate doesn't get misattributed the way "any adjective anywhere in the tweet" used to
-3. sums the per-keyword votes into a single tweet score (`+1` / `-1` / `0`)
-4. groups by `user_id` and checks the mean/std of each user's scores to see how "polarized" they are
+1. `create_manual_labels.py` pulls the first 500 tweets from each csv, strips urls/mentions/hashtags, and dumps them to `data/manual_labels.csv` for hand-labeling (`0` = pro-biden, `1` = pro-trump). while labeling by hand, a spam label (`2`) also got used for ~90 obviously promotional tweets, though the classifier doesn't use that class yet
+2. `train.py` fine-tunes `BERTweetStanceClassifier` (`model.py`) on those ~1000 hand-labeled tweets (spam-labeled rows excluded) for 3 epochs
+3. runs the fine-tuned model over every tweet in `trump_tweets.csv` / `biden_tweets.csv`, producing a `[-1, +1]` stance score per tweet (`P(trump) - P(biden)`)
+4. groups by `user_id`, aggregates mean/std stance, and sorts by lowest std ("most polarized")
 
 ## Project Layout
 
 ```
-analyze_tweets.py   # tokenizes, scores tweets, aggregates per user
-keywords.py          # TRUMP_KEYWORDS / BIDEN_KEYWORDS hashtag lists
-adjectives.py         # POSITIVE_ADJECTIVES / NEGATIVE_ADJECTIVES lists
+model.py                  # BERTweetStanceClassifier + tokenizer helpers
+train.py                  # fine-tunes the classifier, scores all tweets, aggregates per user
+create_manual_labels.py   # bootstraps data/manual_labels.csv from the raw csvs
+data/manual_labels.csv    # ~1000 hand-labeled tweets used for fine-tuning
 requirements.txt
 ```
 
@@ -26,18 +25,18 @@ requirements.txt
 pip install -r requirements.txt
 ```
 
+training is much faster with a gpu - grab the cuda-matched pytorch build from [pytorch.org](https://pytorch.org) separately.
+
 ## Usage
 
 drop `trump_tweets.csv` and `biden_tweets.csv` (need `tweet` and `user_id` columns) in the project root, then:
 
 ```bash
-python analyze_tweets.py
+python train.py
 ```
 
-prints the most "varied" users by score std and saves per-user stats to `user_scores.csv`.
+prints the most "polarized" users (lowest stance std) and saves per-user stats to `user_scores.csv`.
 
 ## Known Issues
 
-- still can't handle sarcasm or broken grammar
-- word-distance is a crude stand-in for "what this adjective is actually describing" - a real parser would help but still wouldn't catch sarcasm
-- keyword + adjective matching is pretty much maxed out at this point - time to try something else
+- the most "polarized" users by this measure are often just spam accounts posting the same promotional tweet over and over - zero variance isn't the same as a genuinely consistent opinion, and the classifier has no way to tell the difference yet
