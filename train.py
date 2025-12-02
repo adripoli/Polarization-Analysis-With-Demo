@@ -105,6 +105,12 @@ def score_all_tweets(model, device):
     df = pd.concat([trump_df, biden_df], ignore_index=True)
     df = df.dropna(subset=["tweet", "user_id"])
 
+    # spam/promo tweets are usually short - drop anything under 20 chars
+    # before scoring, see if that thins out the spammy "most polarized" users
+    before = len(df)
+    df = df[df["tweet"].astype(str).str.len() >= 20]
+    print(f"Dropped {before - len(df)} tweets under 20 characters")
+
     tokenizer = load_tokenizer()
     dataset = TweetDataset(df["tweet"].astype(str).tolist(), tokenizer)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
