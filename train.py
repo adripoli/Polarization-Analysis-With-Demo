@@ -20,6 +20,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from tqdm import tqdm
 
 from model import BERTweetStanceClassifier, load_tokenizer, tokenize_batch
+from clean import clean_dataframe
 
 TRUMP_CSV = "trump_tweets.csv"
 BIDEN_CSV = "biden_tweets.csv"
@@ -105,8 +106,11 @@ def score_all_tweets(model, device):
     df = pd.concat([trump_df, biden_df], ignore_index=True)
     df = df.dropna(subset=["tweet", "user_id"])
 
+    print("Cleaning tweets before scoring...")
+    df = clean_dataframe(df)
+
     tokenizer = load_tokenizer()
-    dataset = TweetDataset(df["tweet"].astype(str).tolist(), tokenizer)
+    dataset = TweetDataset(df["cleaned_text"].tolist(), tokenizer)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     stances = []

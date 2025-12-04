@@ -26,4 +26,8 @@ def clean_dataframe(df):
     df = df[df["cleaned_text"].apply(is_long_enough)]
     print(f"Dropped {before - len(df)} tweets with <= {MIN_WORDS} words")
 
+    before = len(df)
+    df = df.drop_duplicates(subset=["user_id", "cleaned_text"])
+    print(f"Dropped {before - len(df)} duplicate (user, text) tweets")
+
     return df
