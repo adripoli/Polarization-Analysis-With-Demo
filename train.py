@@ -131,11 +131,6 @@ def aggregate_users(scored_df):
     # lowest std = "most polarized" but a lot of these are spam accounts
     # posting identical stuff, not genuinely consistent opinions. need to
     # filter those out somehow
-    #
-    # eyeballed user_df.head(20) after sorting - overwhelmingly the same
-    # handful of short copy-pasted promo tweets over and over, not people
-    # with a genuinely consistent opinion. need to filter these out before
-    # this "most polarized" list means anything
     user_df = user_df.sort_values("std")
     return user_df
 

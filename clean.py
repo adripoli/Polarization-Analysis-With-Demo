@@ -1,4 +1,4 @@
-# clean py cleaning
+# clean py mark
 
 import re
 
@@ -14,7 +14,6 @@ def clean_text(text: str) -> str:
 
 
 def is_long_enough(text: str) -> bool:
-    # off by one
     return len(text.split()) > MIN_WORDS
 
 
