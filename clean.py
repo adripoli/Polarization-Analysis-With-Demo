@@ -2,6 +2,8 @@
 
 import re
 
+from langdetect import detect
+
 MIN_WORDS = 5
 
 
@@ -17,9 +19,17 @@ def is_long_enough(text: str) -> bool:
     return len(text.split()) > MIN_WORDS
 
 
+def is_english(text: str) -> bool:
+    return detect(text) == "en"
+
+
 def clean_dataframe(df):
     df = df.copy()
     df["cleaned_text"] = df["tweet"].apply(clean_text)
+
+    before = len(df)
+    df = df[df["cleaned_text"].apply(is_english)]
+    print(f"Dropped {before - len(df)} non-English tweets")
 
     before = len(df)
     df = df[df["cleaned_text"].apply(is_long_enough)]
