@@ -21,15 +21,10 @@ from tqdm import tqdm
 
 from model import BERTweetStanceClassifier, load_tokenizer, tokenize_batch
 from clean import clean_dataframe
-
-TRUMP_CSV = "trump_tweets.csv"
-BIDEN_CSV = "biden_tweets.csv"
-MANUAL_LABELS_CSV = "data/manual_labels.csv"
-
-BATCH_SIZE = 32
-EPOCHS = 3
-LEARNING_RATE = 2e-5
-TRAIN_SPLIT = 0.8
+from config import (
+    TRUMP_CSV, BIDEN_CSV, MANUAL_LABELS_CSV,
+    BATCH_SIZE, EPOCHS, LEARNING_RATE, TRAIN_SPLIT,
+)
 
 
 class TweetDataset(Dataset):

@@ -4,7 +4,7 @@ import re
 
 from langdetect import detect, LangDetectException
 
-MIN_WORDS = 5
+from config import MIN_WORDS
 
 
 def clean_text(text: str) -> str:
