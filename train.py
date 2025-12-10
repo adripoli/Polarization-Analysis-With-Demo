@@ -20,9 +20,9 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from tqdm import tqdm
 
 from model import BERTweetStanceClassifier, load_tokenizer, tokenize_batch
-from clean import clean_dataframe
+from stage0_cleaning import load_and_clean
 from config import (
-    TRUMP_CSV, BIDEN_CSV, MANUAL_LABELS_CSV,
+    MANUAL_LABELS_CSV,
     BATCH_SIZE, EPOCHS, LEARNING_RATE, TRAIN_SPLIT,
 )
 
@@ -96,16 +96,11 @@ def train_model(device):
 
 
 def score_all_tweets(model, device):
-    trump_df = pd.read_csv(TRUMP_CSV)
-    biden_df = pd.read_csv(BIDEN_CSV)
-    df = pd.concat([trump_df, biden_df], ignore_index=True)
-    df = df.dropna(subset=["tweet", "user_id"])
-
     print("Cleaning tweets before scoring...")
-    df = clean_dataframe(df)
+    full_df, filtered_df = load_and_clean()
 
     tokenizer = load_tokenizer()
-    dataset = TweetDataset(df["cleaned_text"].tolist(), tokenizer)
+    dataset = TweetDataset(full_df["cleaned_text"].tolist(), tokenizer)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     stances = []
@@ -117,8 +112,8 @@ def score_all_tweets(model, device):
             output = model(input_ids, attention_mask)
             stances.extend(output["stance"].cpu().numpy().tolist())
 
-    df["stance"] = stances
-    return df
+    full_df["stance"] = stances
+    return full_df
 
 
 def aggregate_users(scored_df):
