@@ -1,4 +1,4 @@
-# train.py
+# stage3_training.py
 #
 # fine-tunes the BERTweet classifier on 1000 hand-labeled tweets
 # (data/manual_labels.csv, columns: cleaned_text, label), then runs it on
@@ -21,10 +21,12 @@ from tqdm import tqdm
 
 from model import BERTweetStanceClassifier, load_tokenizer, tokenize_batch
 from stage0_cleaning import load_and_clean
-from config import (
-    MANUAL_LABELS_CSV,
-    BATCH_SIZE, EPOCHS, LEARNING_RATE, TRAIN_SPLIT,
-)
+from config import MANUAL_LABELS_CSV, EPOCHS, LEARNING_RATE, TRAIN_SPLIT
+
+# TODO: these should probably just come from config.py, but grabbing them
+# locally for now since this file is doing its own tokenizing/batching
+MAX_LENGTH = 128
+BATCH_SIZE = 32
 
 
 class TweetDataset(Dataset):
@@ -48,7 +50,7 @@ class TweetDataset(Dataset):
 
 
 def train_model(device):
-    print("Loading manually labelled tweets...")
+    print(f"Loading manually labelled tweets (tokenizing up to {MAX_LENGTH} tokens)...")
     labelled_df = pd.read_csv(MANUAL_LABELS_CSV)
 
     # a handful of these got labeled 2 (spam) while going through them by
