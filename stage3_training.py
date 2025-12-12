@@ -14,6 +14,7 @@
 # tell the difference yet
 
 import torch
+import numpy as np
 import pandas as pd
 from torch import nn
 from torch.utils.data import Dataset, DataLoader, random_split
@@ -23,7 +24,7 @@ from model import BERTweetStanceClassifier, load_tokenizer, tokenize_batch
 from stage0_cleaning import load_and_clean
 from config import (
     MANUAL_LABELS_CSV,
-    MAX_LENGTH, BATCH_SIZE, EPOCHS, LEARNING_RATE, TRAIN_SPLIT,
+    MAX_LENGTH, BATCH_SIZE, EPOCHS, LEARNING_RATE, TRAIN_SPLIT, NUM_LABELS,
 )
 
 
@@ -51,11 +52,12 @@ def train_model(device):
     print(f"Loading manually labelled tweets (tokenizing up to {MAX_LENGTH} tokens)...")
     labelled_df = pd.read_csv(MANUAL_LABELS_CSV)
 
-    # a handful of these got labeled 2 (spam) while going through them by
-    # hand, but the classifier doesn't have a spam class yet so just skip them
-    labelled_df = labelled_df[labelled_df["label"] != 2].copy()
+    # now that the classifier actually has a spam class (NUM_LABELS=3), stop
+    # throwing away the label==2 rows - they're the only real spam signal we
+    # have
     labelled_df["label"] = labelled_df["label"].replace({-1: 0})
-    print(f"  {len(labelled_df)} labelled tweets (spam-labelled rows excluded)")
+    print(f"  {len(labelled_df)} labelled tweets "
+          f"({(labelled_df['label'] == 2).sum()} spam)")
 
     tokenizer = load_tokenizer()
     dataset = TweetDataset(
@@ -72,7 +74,19 @@ def train_model(device):
     val_loader = DataLoader(val_set, batch_size=BATCH_SIZE)
 
     model = BERTweetStanceClassifier().to(device)
-    loss_fn = nn.CrossEntropyLoss()
+
+    # spam is maybe 5-10% of the labelled rows, so an unweighted loss barely
+    # penalizes missing it. inverse-frequency weighting (sklearn's
+    # "balanced" formula) evens that out
+    label_counts = labelled_df["label"].value_counts().reindex(
+        range(NUM_LABELS), fill_value=0
+    ).values.astype(float)
+    label_counts[label_counts == 0] = 1.0
+    class_weights = len(labelled_df) / (NUM_LABELS * label_counts)
+    class_weights = torch.tensor(class_weights, dtype=torch.float, device=device)
+    print(f"  Class weights (biden/trump/spam): {class_weights.cpu().numpy().round(3)}")
+
+    loss_fn = nn.CrossEntropyLoss(weight=class_weights)
     optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 
     for epoch in range(EPOCHS):

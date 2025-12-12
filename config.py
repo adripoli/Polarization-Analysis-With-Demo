@@ -10,6 +10,8 @@ EPOCHS = 3
 LEARNING_RATE = 2e-5
 TRAIN_SPLIT = 0.8
 
+NUM_LABELS = 3  # 0 pro biden
+
 MIN_WORDS = 5
 
 # users below this
