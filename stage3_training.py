@@ -21,12 +21,10 @@ from tqdm import tqdm
 
 from model import BERTweetStanceClassifier, load_tokenizer, tokenize_batch
 from stage0_cleaning import load_and_clean
-from config import MANUAL_LABELS_CSV, EPOCHS, LEARNING_RATE, TRAIN_SPLIT
-
-# TODO: these should probably just come from config.py, but grabbing them
-# locally for now since this file is doing its own tokenizing/batching
-MAX_LENGTH = 128
-BATCH_SIZE = 32
+from config import (
+    MANUAL_LABELS_CSV,
+    MAX_LENGTH, BATCH_SIZE, EPOCHS, LEARNING_RATE, TRAIN_SPLIT,
+)
 
 
 class TweetDataset(Dataset):

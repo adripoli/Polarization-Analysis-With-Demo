@@ -8,9 +8,9 @@
 import torch
 import torch.nn as nn
 from transformers import AutoTokenizer, AutoModel
+from config import MAX_LENGTH
 
 BERTWEET_MODEL = "vinai/bertweet-base"
-MAX_LENGTH = 128
 NUM_LABELS = 2  # 0 = pro-biden, 1 = pro-trump
 
 
