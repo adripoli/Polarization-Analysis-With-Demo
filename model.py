@@ -52,9 +52,26 @@ class BERTweetStanceClassifier(nn.Module):
         cls_embedding = self.dropout(cls_embedding)
 
         logits = self.classifier(cls_embedding)
-        probs = self.softmax(logits)
+        probs = self.softmax(logits)  # [P(biden), P(trump), P(spam)]
 
-        # -1 = full biden, +1 = full trump
-        stance = probs[:, 1] - probs[:, 0]
+        # naive stance = probs[:, 1] - probs[:, 0] looked right until spam
+        # tweets showed up in testing: something like (biden=0.1, trump=0.6,
+        # spam=0.3) - clearly pro-trump, spam-flavored phrasing - only
+        # scored stance=0.5 instead of something close to 1. the spam mass
+        # was eating into the political signal for no good reason, since
+        # spam isn't "a bit biden and a bit trump", it's just noise.
+        #
+        # renormalizing over P(biden)+P(trump) only fixes that: the same
+        # tweet now scores (0.6-0.1)/(0.6+0.1) = 0.71, and the score no
+        # longer shrinks just because the model also picked up some spam
+        # probability mass.
+        prob_spam = probs[:, 2]
+        political_mass = probs[:, 0] + probs[:, 1] + 1e-9
+        stance = (probs[:, 1] - probs[:, 0]) / political_mass
 
-        return {"logits": logits, "probs": probs, "stance": stance}
+        return {
+            "logits": logits,
+            "probs": probs,
+            "stance": stance,
+            "prob_spam": prob_spam,
+        }
