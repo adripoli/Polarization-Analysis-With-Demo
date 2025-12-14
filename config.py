@@ -12,6 +12,9 @@ TRAIN_SPLIT = 0.8
 
 NUM_LABELS = 3  # 0 pro biden
 
+# users with more
+SPAM_USER_THRESHOLD = 0.5
+
 MIN_WORDS = 5
 
 # users below this

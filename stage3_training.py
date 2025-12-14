@@ -1,17 +1,17 @@
 # stage3_training.py
 #
-# fine-tunes the BERTweet classifier on 1000 hand-labeled tweets
-# (data/manual_labels.csv, columns: cleaned_text, label), then runs it on
-# every tweet in trump_tweets.csv / biden_tweets.csv and works out a
-# mean/std stance score per user
+# fine-tunes the BERTweet classifier (now 3-way: biden/trump/spam) on the
+# hand-labeled tweets in data/manual_labels.csv, then scores the
+# MIN_TWEETS_PER_USER-filtered tweets from stage0_cleaning so stage4_5 can
+# aggregate them per user
 #
 # way better than the keyword approach - actually gets context, sarcasm
 # (mostly), no hand-built keyword list needed
 #
-# known issue: the most "polarized" users by this (lowest std) are often
-# just spam accounts posting the same promo tweet over and over. zero
-# variation isn't the same as a real, strong opinion, but the model can't
-# tell the difference yet
+# spam-heavy users used to sneak through as "most polarized" (zero std
+# looks like a strong consistent opinion, but it's often just a promo bot).
+# now that the classifier can actually flag spam tweets, stage4_5 drops
+# those users properly instead of relying on the old length/dedupe proxy
 
 import torch
 import numpy as np
@@ -22,6 +22,7 @@ from tqdm import tqdm
 
 from model import BERTweetStanceClassifier, load_tokenizer, tokenize_batch
 from stage0_cleaning import load_and_clean
+from stage4_5_user_analysis import aggregate_users
 from config import (
     MANUAL_LABELS_CSV,
     MAX_LENGTH, BATCH_SIZE, EPOCHS, LEARNING_RATE, TRAIN_SPLIT, NUM_LABELS,
@@ -109,34 +110,32 @@ def train_model(device):
     return model
 
 
-def score_all_tweets(model, device):
-    print("Cleaning tweets before scoring...")
-    full_df, filtered_df = load_and_clean()
-
+def score_all_tweets(model, device, df):
+    """runs the trained model over every tweet in df, attaching prob_biden/
+    prob_trump/prob_spam + stance columns. df should be the
+    MIN_TWEETS_PER_USER-filtered dataframe from stage0_cleaning, since
+    that's the set the per-user analysis in stage4_5 runs on"""
     tokenizer = load_tokenizer()
-    dataset = TweetDataset(full_df["cleaned_text"].tolist(), tokenizer)
+    dataset = TweetDataset(df["cleaned_text"].tolist(), tokenizer)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    stances = []
+    probs_all, stances = [], []
     model.eval()
     with torch.no_grad():
-        for batch in tqdm(loader, desc="Scoring all tweets"):
+        for batch in tqdm(loader, desc="Scoring tweets"):
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
             output = model(input_ids, attention_mask)
+            probs_all.append(output["probs"].cpu().numpy())
             stances.extend(output["stance"].cpu().numpy().tolist())
 
-    full_df["stance"] = stances
-    return full_df
-
-
-def aggregate_users(scored_df):
-    user_df = scored_df.groupby("user_id")["stance"].agg(["mean", "std", "count"])
-    # lowest std = "most polarized" but a lot of these are spam accounts
-    # posting identical stuff, not genuinely consistent opinions. need to
-    # filter those out somehow
-    user_df = user_df.sort_values("std")
-    return user_df
+    probs = np.vstack(probs_all)
+    df = df.copy()
+    df["prob_biden"] = probs[:, 0]
+    df["prob_trump"] = probs[:, 1]
+    df["prob_spam"] = probs[:, 2]
+    df["stance"] = stances
+    return df
 
 
 def main():
@@ -144,13 +143,18 @@ def main():
     print(f"Using device: {device}")
 
     model = train_model(device)
-    scored_df = score_all_tweets(model, device)
+
+    print("Cleaning tweets before scoring...")
+    full_df, filtered_df = load_and_clean()
+    scored_df = score_all_tweets(model, device, filtered_df)
+
     user_df = aggregate_users(scored_df)
+    user_df = user_df.sort_values("std_stance")
 
     print("\nMost 'polarized' users (lowest stance std):")
     print(user_df.head(10))
 
-    user_df.to_csv("user_scores.csv")
+    user_df.to_csv("user_scores.csv", index=False)
 
 
 if __name__ == "__main__":
