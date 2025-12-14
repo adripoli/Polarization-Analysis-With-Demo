@@ -4,7 +4,10 @@ import numpy as np
 import pandas as pd
 from scipy.stats import entropy as scipy_entropy
 
-from config import SPAM_USER_THRESHOLD, MIN_TWEETS_PER_USER
+from config import (
+    SPAM_USER_THRESHOLD, MIN_TWEETS_PER_USER,
+    WEIGHT_STD, WEIGHT_ENTROPY, WEIGHT_CONSISTENCY,
+)
 
 COL_USER = "user_id"
 
@@ -77,3 +80,26 @@ def aggregate_users(scored_df):
 
     print(f"Retained {len(user_df)} users for polarization analysis")
     return user_df
+
+
+# stage 5 polarization
+
+def compute_polarization(user_df):
+    """combines std entropy"""
+    df = user_df.copy()
+
+    max_std = df["std_stance"].max()
+    std_norm = df["std_stance"] / max_std if max_std > 0 else 0.0
+
+    df["polarization_raw"] = (
+        WEIGHT_STD * (1 - std_norm)
+        + WEIGHT_ENTROPY * df["mean_entropy"]
+        + WEIGHT_CONSISTENCY * df["consistency_ratio"]
+    )
+
+    log_counts = np.log1p(df["non_spam_count"])
+    df["tweet_count_weight"] = log_counts / log_counts.max()
+    df["polarization_weighted"] = df["polarization_raw"] * df["tweet_count_weight"]
+
+    df = df.sort_values("polarization_weighted", ascending=False).reset_index(drop=True)
+    return df

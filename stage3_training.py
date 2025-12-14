@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 from model import BERTweetStanceClassifier, load_tokenizer, tokenize_batch
 from stage0_cleaning import load_and_clean
-from stage4_5_user_analysis import aggregate_users
+from stage4_5_user_analysis import aggregate_users, compute_polarization
 from config import (
     MANUAL_LABELS_CSV,
     MAX_LENGTH, BATCH_SIZE, EPOCHS, LEARNING_RATE, TRAIN_SPLIT, NUM_LABELS,
@@ -149,9 +149,9 @@ def main():
     scored_df = score_all_tweets(model, device, filtered_df)
 
     user_df = aggregate_users(scored_df)
-    user_df = user_df.sort_values("std_stance")
+    user_df = compute_polarization(user_df)
 
-    print("\nMost 'polarized' users (lowest stance std):")
+    print("\nMost polarized users (weighted score):")
     print(user_df.head(10))
 
     user_df.to_csv("user_scores.csv", index=False)
