@@ -281,7 +281,8 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--cli", help="score one tweet in the terminal and exit")
     ap.add_argument("--share", action="store_true", help="also make a temporary public gradio link")
-    ap.add_argument("--port", type=int, default=7860)
+    # no port given? gradio grabs the first free one from 7860 up
+    ap.add_argument("--port", type=int, default=None)
     a = ap.parse_args()
     if a.cli:
         for m, r in all_marks(a.cli).items():
