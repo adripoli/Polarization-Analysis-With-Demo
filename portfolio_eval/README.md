@@ -15,4 +15,13 @@ The scripts were run from a scratch folder. They take paths as arguments, and th
 6b. `probe_side.py`: the 12 fresh tweets that show how the models do outside their training slice
 7. `figs.py`, `fig_users.py`, `build_report.py`, `build_short.py`: charts and both PDFs. `record_demo.py` + `make_video.py`: the demo video (needs `pip install playwright` + `python -m playwright install chromium`, and ffmpeg)
 
-Heads up: the saved `best_model.pt` predicts Spam for every tweet (collapsed run). See section 7 of the report.
+8. Mark 7, run from the project root after `python main.py`:
+   - `eval_mark7.py`: Mark 4, old final and Mark 7 on the held-out, supportive-tweet and fresh-tweet tests
+   - `audit_mark7.py`: hunts for test tweets hiding in the training data, then draws the blind sample
+   - `blind_test.py`: grades the random untagged tweets
+   - `user_check.py`: user scores vs the side people declared with hashtags
+   - `mark7_seeds.py`: retrains on new seeds so one lucky run can't fool anyone
+
+Heads up: `model/bertweet_finetuned/best_model.pt` predicts Spam for every tweet (collapsed run). See section 7 of the report.
+The tests in `data/shortcut_test.csv`, `data/blind_test.csv` and `data/fresh_probe.csv` were picked, written and labeled by
+Claude, not by a person, so they're worth re-checking by hand.

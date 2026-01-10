@@ -96,8 +96,12 @@ def fig_accuracy():
     a = np.array([d["pol_acc"] for d in m4])
     rows.append(("Mark 4  BERTweet, fine-tuned", a.mean(), 1 - a.mean(), 0, a.std()))
     f = fin["test_heldout"]["pol_acc"]
-    rows.append(("Final model (stance head)", f, 1 - f, 0, None))
-    fig, ax = plt.subplots(figsize=(10, 4.2))
+    rows.append(("Old final model (stance head)", f, 1 - f, 0, None))
+    e7 = json.load(open(r"C:\Users\Asus Gaming\Desktop\political_polarization\portfolio_eval\mark7_eval.json"))
+    s7 = json.load(open(r"C:\Users\Asus Gaming\Desktop\political_polarization\portfolio_eval\mark7_seeds.json"))
+    a7 = np.array([e7["heldout"]["Mark 7"]["acc"]] + [v["heldout"] for v in s7.values()])
+    rows.append(("Mark 7  shortcut fixed", a7.mean(), 1 - a7.mean(), 0, a7.std()))
+    fig, ax = plt.subplots(figsize=(10, 4.7))
     ax.grid(axis="y", visible=False)
     for i, (lab, c, w, n, sd) in enumerate(rows[::-1]):
         ax.barh(i, c, color=BLUE, height=0.62, edgecolor=SURF, linewidth=2)

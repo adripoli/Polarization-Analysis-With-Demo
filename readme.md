@@ -61,6 +61,19 @@ stuff lands in `outputs/`:
 - `polarization_vs_activity.png` - scatter + pearson correlation
 - `gmm_summary.csv` - cluster means, stds, weights, overlap coefficient
 
+## Mark 7
+
+Typing "I love Biden" into the demo came back pro-Trump. On 2020 Twitter almost everyone attacks the other side, so the
+model learned that mentioning Biden means you're against him. Mark 7 labels tweets by hashtags that pick a side, deletes
+the tag, and balances who's mentioned so a name alone tells it nothing. Details in `portfolio_eval/README.md`.
+
+| Test | Mark 4 | Mark 7 |
+|---|---|---|
+| 155 held-out hand-labeled tweets | 77% | 87% |
+| 77 supportive tweets naming only their own side | 13% | 97% |
+| 40 fresh tweets written before training | 52% | 95% |
+| 77 random untagged tweets with a clear side | 65% | 90% |
+
 ## Demo
 
 there's a live demo in [`demo/`](demo/) that runs one tweet through every version of the pipeline side by side - marks 1-3 are the actual old keyword code from git, mark 4 and final are the BERTweet models. so you can literally watch each version get it right or wrong.

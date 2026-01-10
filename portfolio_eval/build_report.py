@@ -160,11 +160,19 @@ s += [Spacer(1, 0.35 * inch), P("MIT MAKER PORTFOLIO · REFERENCE NOTES", "small
       Spacer(1, 10),
       P("<b>Contents</b>", "h3"),
       P("1. The project in a paragraph  ·  2. What I built  ·  3. How every version was retested "
-        " ·  4. Timeline  ·  5. Mark by mark  ·  6. Final pipeline and results "
+        " ·  4. Timeline  ·  5. Mark by mark  ·  6. Final pipeline and results  ·  6b. Mark 7 "
         " ·  7. Things found while rerunning everything  ·  8. Fact-check of the original notes "
         " ·  9. Mark ? (what's next)  ·  10. Engineering lessons  ·  "
         "11. Using this for MIT  ·  12. Demo and codebase  ·  Appendix: every commit, test details", "small"),
       PageBreak()]
+
+# mark 7 numbers
+_R = r"C:\Users\Asus Gaming\Desktop\political_polarization\portfolio_eval"
+_j = lambda n: json.load(open(os.path.join(_R, n)))
+E7, BL7, UC7, SD7 = _j("mark7_eval.json"), _j("blind_eval.json"), _j("user_check.json"), _j("mark7_seeds.json")
+H7 = np.array([E7["heldout"]["Mark 7"]["acc"]] + [v["heldout"] for v in SD7.values()])
+ALL7 = {k: [v[k] for v in SD7.values()] for k in ("heldout", "shortcut", "fresh", "blind")}
+pc0 = lambda x: f"{x*100:.0f}%"
 
 # 1 one paragraph
 s += [P("1. The project in a paragraph", "h1"),
@@ -176,16 +184,18 @@ s += [P("1. The project in a paragraph", "h1"),
       P("The first three versions were hand-written rules (keywords, then adjectives, then word distance). They all "
         "hit the same wall, so I switched to fine-tuning a transformer language model (BERTweet) on 1,000 tweets I "
         "labeled by hand. The versions after that were about fixing what the model got wrong at the user level: "
-        "spam accounts, non-English tweets, and a scoring formula that rewarded copy-paste bots."),
+        "spam accounts, non-English tweets, and a scoring formula that rewarded copy-paste bots. Then a live demo showed "
+        "the models had learned a shortcut, which led to Mark 7."),
       fig("fig2_accuracy.png",
           f"Figure 1. The whole project in one chart. Every version graded on the same {155} hand-labeled political tweets "
           "that the final model never trained on. The rule-based versions are right when they make a call, but they "
-          "skip almost 9 out of 10 tweets. Mark 4 bars are the mean of retraining 5 times (± = standard deviation)."),
+          "skip almost 9 out of 10 tweets. Mark 4 is the mean of retraining 5 times, Mark 7 of 2 (± = standard deviation)."),
       ]
 
 # 2 what I
 s += [P("2. What I built", "h1"),
-      P("Everything here is my code except the pretrained BERTweet weights and the Python libraries. The pieces:"),
+      P("Everything through the final version is my code except the pretrained BERTweet weights and the Python libraries. "
+        "Mark 7, the demo and the re-grading scripts were built with Claude Code (see section 11). The pieces:"),
       table([["Part", "What it does", "File"],
              ["Hand-labeled dataset", "1,000 tweets I read one by one and labeled pro-Biden, pro-Trump or spam. Started from an "
               "auto-labeled sheet (by hashtag) and corrected it by hand. Used for training and for grading every version.",
@@ -435,12 +445,64 @@ s += [CondPageBreak(3.2 * inch), P("6. The final pipeline and results", "h1"),
       box([P(f"<b>Results.</b> Stance accuracy on the 155 held-out tweets: <b>{pct(fp)}</b> (vs {pct(ful)} for Mark 4; both "
              "drop to about 7 out of 12 on brand-new tweets, see section 7). "
              "From the 2nd full run: 30,525 users kept after cleaning and spam filtering. Two clusters: pro-Biden centered "
-             "at −0.42 (53% of users) and pro-Trump at +0.31 (47%), with an overlap of 0.077.")], border=BLUE),
+             "at −0.42 (53% of users) and pro-Trump at +0.31 (47%), with an overlap of 0.077. Heads up: these user "
+             "numbers didn't survive a later check. See section 6b.")], border=BLUE),
       Spacer(1, 8),
       fig("fig6_final.png", "Figure 7. Left: every user's average stance with the two fitted clusters (from your "
           "user_polarization_scores_2nd_run.csv, refit here and it reproduces the 0.077). Right: before the tweet-count "
           "weight, busier users are slightly <i>less</i> polarized; the upward trend only appears after multiplying in "
           "log(tweet count). See section 7.")]
+
+# 6b mark 7
+s += [CondPageBreak(3.2 * inch), P("6b. Mark 7: the shortcut and the fix", "h1"),
+      P("October 2026. Built with Claude Code, see section 11.", "small"),
+      P("Building the demo is what broke this open. Typing “I love Biden” came back 80% Trump on Mark 4, and "
+        "“I love trump” came back 98% Biden on the saved final model. Two different problems were hiding behind good "
+        "test scores:"),
+      *B(["<b>Mark 4 learned who's mentioned, not what's said.</b> In the hand labels, 80% of pro-Trump tweets mention Biden "
+          "and 85% of pro-Biden tweets mention Trump. Tweets naming only Biden are pro-Trump 83% of the time, and tweets naming "
+          "only Trump are pro-Biden 72% of the time. Hardly any praise anyone (positive words in 4–8%). So “mentions "
+          "Biden = Trump fan” really works on election Twitter, right up until someone says something nice.",
+          "<b>The old final model seems to have learned which file a tweet came from.</b> Its labels were the source file, and its spam "
+          "head collapsed, so it snaps to about two answers no matter what you type.",
+          "<b>The test set couldn't catch either one.</b> It came from the same pile, with the same attack-heavy mix, so it "
+          "rewarded the shortcut. The scores were real. They just couldn't see this."]),
+      P("The fix", "h3"),
+      *B(["<b>Better labels.</b> Hashtags that pick a side (#VoteBiden, #Trump2020) instead of the source file. Checked against "
+          "the hand labels, they agree 80% of the time, versus 29% for the source file.",
+          "<b>Hide the answer.</b> The side tag gets deleted from 3 of every 4 training tweets, so the model has to read the words.",
+          "<b>Break the shortcut on purpose.</b> Tweets are grouped by who they mention, and each group gets equal counts per side "
+          "(12,000 each, 72,000 total). Now a name alone tells the model nothing.",
+          "<b>Trust the hand labels more.</b> Counted ×20 instead of ×5, and they alone pick the best checkpoint.",
+          "<b>Lock the tests.</b> Test tweets are filtered out of training by a normalized match, and a near-duplicate search "
+          "afterward found 0 exact leaks. Dropping the few near-duplicates barely moves any score."]),
+      fig("fig8_mark7.png", "Figure 9. Same three models on four tests. Held-out is your hand labels. The other three were built to "
+          "be harder and don't come from the training slice. Mark 7 here is the first run, the one the demo uses."),
+      box([P(f"<b>Results.</b> Held-out: {pc0(E7['heldout']['Mark 4']['acc'])} → <b>{pc0(H7.mean())}</b> (mean of {len(H7)} runs, {pc0(H7.min())} and {pc0(H7.max())}). "
+             f"Tweets that support a candidate and name only that candidate: {pc0(E7['shortcut']['Mark 4']['acc'])} → <b>{pc0(E7['shortcut']['Mark 7']['acc'])}</b>. "
+             f"Fresh tweets written before training: {pc0(E7['fresh']['Mark 4']['acc'])} → <b>{pc0(E7['fresh']['Mark 7']['acc'])}</b>. "
+             f"Random untagged tweets: {pc0(BL7['Mark 4']['acc'])} → <b>{pc0(BL7['Mark 7']['acc'])}</b> (always saying Biden gets {pc0(BL7['always_biden'])}). "
+             f"A second run got {', '.join(pc0(x) for x in ALL7['shortcut'])} on supportive, {', '.join(pc0(x) for x in ALL7['fresh'])} on fresh and "
+             f"{', '.join(pc0(x) for x in ALL7['blind'])} on untagged. A third retrain got cut off by low memory, so that's two runs, not many.")], border=BLUE),
+      Spacer(1, 8),
+      P("What it did to the user results", "h3"),
+      P(f"The old user numbers don't hold up. Among users who kept declaring a side with hashtags, the 2nd run's score matched their "
+        f"side only {pc0(UC7['old 2nd run']['acc'])} of the time. Mark 7 matches {pc0(UC7['Mark 7']['acc'])}, or "
+        f"{pc0(UC7['Mark 7 tag-free']['acc'])} when scoring only their tweets with no side tags, which training never saw. "
+        "31% of the users in both runs switched sides. New run: 27,965 users, a pro-Biden cluster at −0.60 (68%) and a "
+        "pro-Trump cluster at +0.59 (32%), overlap 0.011."),
+      P("Caveats to keep", "h3"),
+      *B(["<b>Don't claim the population got more polarized.</b> Overlap fell from 0.077 to 0.011, but Mark 7 is also more "
+          "confident, which pushes scores outward, so the two overlaps aren't comparable. BIC still prefers 3 clusters over 2 "
+          "(33,834 vs 36,759).",
+          "<b>The 68/32 split is about this dataset,</b> not US voters. People tweeting these hashtags aren't a poll.",
+          "<b>The new tests have limits.</b> Claude picked, wrote and labeled them, not you. Supportive tweets were chosen for being "
+          "clear, and 43 of the 120 random tweets were skipped as neutral, foreign or unclear, so 90% means tweets with a clear side. "
+          "Re-check <font name='DVM'>data/shortcut_test.csv</font> and <font name='DVM'>data/blind_test.csv</font> by hand before you lean on them.",
+          "<b>The 64% vs 89% isn't a perfect match-up.</b> The old checkpoint is gone, so it can't be rerun tag-free. Its 64% had tags "
+          "in the text, which should have helped it if anything.",
+          "<b>Spam is working, barely.</b> The head no longer collapses, but it caught 6 of 14 spam tweets, with 6 false alarms out of 155.",
+          "<b>It still misses things.</b> “Those MAGA people are crazy” is a 53/47 coin flip it loses."])]
 
 # 7 findings
 s += [P("7. Things found while rerunning everything", "h1"),
@@ -450,8 +512,8 @@ finds = [
      "100% of tweets (average P(spam) = 0.98). That's the class-weight collapse your own comment in stage3_training.py warns "
      "about. It's why user_polarization_scores.csv and stance_histogram.png from 15:23 that day are empty. The good "
      "_2nd_run results came from an earlier checkpoint that got overwritten. The Biden-vs-Trump half of the saved model "
-     f"still works ({pct(fp)} held-out) because stance only compares those two classes. So: quote the 2nd-run results, and "
-     "retrain before you claim anything about the spam filter."),
+     f"still works ({pct(fp)} held-out) because stance only compares those two classes. Those 2nd-run results later failed "
+     "a check against users' declared sides, so quote Mark 7's instead (section 6b)."),
     ("Hashtag labels are much noisier than assumed.", "The code assumes the weak labels (“it's in the #trump file, so "
      "it's pro-Trump”) are 20–30% wrong. In your 1,000 hand labels they were wrong 71% of the time. Those are the "
      "first 500 rows of each file, probably all from the same few days (lots of Hunter Biden email tweets), so the full "
@@ -466,8 +528,8 @@ finds = [
      "which look like the same few days in mid-October 2020. The held-out test tweets come from that same slice, so the "
      "76–80% is “in-distribution”. On 12 brand-new tweets written for this report (6 obviously pro-Trump, 6 "
      "obviously pro-Biden), Mark 4 and the final model each got only 7 right. The saved final model also tends to default to "
-     "Biden, because its collapsed spam head leaves only ~3% of the probability for the two political classes. Say this in "
-     "the write-up; knowing where your model breaks is a strength, not a weakness."),
+     "Biden, because its collapsed spam head leaves only ~3% of the probability for the two political classes. This is what "
+     "led to Mark 7 (section 6b). Say it in the write-up; knowing where your model breaks is a strength, not a weakness."),
     ("Mark 3 crashes on the full dataset.", "167 empty tweets + a missing str() cast. For the rerun it was fed empty strings "
      "instead of blanks; the scoring code itself was untouched."),
     ("Desktop and GitHub don't match.", "GitHub has the older model (first-token pooling, no inner dropout), so the saved "
@@ -497,20 +559,19 @@ s += [CondPageBreak(3 * inch), P("8. Fact-check of the original notes", "h1"),
              ["Mark 5 “only tweets with over 5 words”", "Correct, plus a dedupe of repeated (user, text) pairs",
               "mention the dedupe too"],
              ["Mark 6 is “the final product”", "One more round after it: spam class, composite score, GMM, leakage fix",
-              "call it “Mark 7” or “the final version”"],
+              "call it “the final version” (Mark 7 is now the shortcut fix)"],
              ["“aprox. 5 hours on an RTX 3070”", "Matches the 8a5e937 commit note", "fine as is"]],
             [1.75 * inch, 2.75 * inch, CONTENT_W - 4.5 * inch])]
 
 # 9 mark
 s += [P("9. Mark ?: what I'd do next", "h1"),
-      *B(["<b>Real spam detection.</b> The spam class collapsed because it only had 71 examples next to ~990k political ones. "
+      *B(["<b>Real spam detection.</b> Mark 7's spam output no longer collapses, but it only catches 6 of 14. "
           "Label a few hundred more spam tweets, or build a small separate model on account behavior (posting rate, share of "
           "repeated tweets) instead of tweet text.",
           "<b>A bigger, double-checked test set.</b> 155 political test tweets means every percentage has about ±6 points of "
           "wiggle room (95% range). Label another 1,000 and have a second person label a chunk of them to see how often two humans agree.",
           "<b>Keep the non-English tweets.</b> A multilingual tweet model (like XLM-T) instead of throwing away 27% of the data.",
-          "<b>Fix the weak labels.</b> Measure how wrong the hashtag labels really are across the whole dataset, not just "
-          "the first 500 rows, or drop them for something better.",
+          "<b>Human-checked hard tests.</b> Have a person re-label Mark 7's supportive and blind tests, then grow them.",
           "<b>Test the two-camps claim properly</b> with a model comparison (BIC) or a bimodality test, and report it either way."])]
 
 # 10 lessons
@@ -528,7 +589,11 @@ s += [P("10. Engineering lessons (the adapting part)", "h1"),
               "reading the worst predictions found the foreign tweets (4b58e61)."],
              ["<b>Order and cache by cost.</b>", "Cheap filters before langdetect; cache the cleaned data so reruns skip it."],
              ["<b>Don't let test data leak into training.</b>", "Hand labels copied before the split inflated validation scores; "
-              "fixed by copying after."]],
+              "fixed by copying after."],
+             ["<b>A test from the same pile can't catch a shortcut.</b>", "76–80% looked great. Typing “I love Biden” "
+              "found what the test couldn't, and a test built to break the shortcut took Mark 4 down to 13%."],
+             ["<b>Be suspicious of a big jump.</b>", "Mark 7's scores looked too good, so it got a leak audit, a blind test and "
+              "a second retrain before any of them got reported."]],
             [2.6 * inch, CONTENT_W - 2.6 * inch])]
 
 # 11 MIT
@@ -542,38 +607,41 @@ s += [P("11. Using this for the MIT Maker Portfolio", "h1"),
           "Figure 3 (pipeline evolution) to show the design changes.",
           "The case-study table from Mark 3, since it's the clearest example of a fix that broke something.",
           "Figure 6 (bots and non-English users per Mark) for the spam/language story.",
+          "Figure 9 (Mark 4 vs Mark 7 on the hard tests) for the shortcut story.",
           "A screenshot of your GitHub commit history. It's honest evidence of the process."]),
       P("Be clear about who did what", "h3"),
       *B(["Say which parts used AI tools. Your notes say the keyword lists were partly AI-generated; say so.",
+          "<b>Mark 7, the demo and the re-grading were built with Claude Code,</b> including this report's analysis. You spotted the "
+          "problem and pushed for the fix, but Claude wrote that code and picked and labeled the new tests. Say that plainly, and "
+          "make sure you can explain every part of it in your own words. Re-labeling the new tests yourself would make that part truly yours.",
           "Credit the pretrained model: BERTweet (Nguyen, Vu &amp; Nguyen, 2020; vinai/bertweet-base on Hugging Face).",
           "Credit the dataset. The two CSVs look like the public Kaggle “US Election 2020 Tweets” set "
           "(hashtag_donaldtrump / hashtag_joebiden). Confirm where you got them and cite that.",
           "The parts that are clearly yours: the 1,000 hand labels, every rule version, the model head and training loop, "
-          "the cleaning, the scoring formula, the debugging."]),
+          "the cleaning, the scoring formula, the original debugging, and catching that the demo's answers were wrong."]),
       P("A one-line pitch you could adapt", "h3"),
-      box([P("“I built a pipeline to measure political polarization in 1.75 million election tweets, rebuilt it six "
-             "times as each version broke in a new way, and took held-out accuracy from 8% with keyword rules to 80% with "
-             "a transformer I fine-tuned on 1,000 tweets I labeled myself.”")], border=AQUA)]
+      box([P("“I built a pipeline to measure political polarization in 1.75 million election tweets, rebuilt it seven "
+             "times as each version broke in a new way, and took held-out accuracy from 8% with keyword rules to 87%. The last "
+             "fix came from typing “I love Biden” into my demo and watching a model with a good test score get it wrong.”")], border=AQUA)]
 
 # 12 demo codebase
 s += [CondPageBreak(4 * inch), P("12. Demo and codebase (what MIT asks for)", "h1"),
       P("For code projects MIT wants the codebase (ideally version-controlled) <i>and</i> a working demo (video, live, or "
         "executable). You now have all three kinds:"),
-      *B(["<b>Video:</b> <font name='DVM'>Polarization Pipeline Demo.mp4</font> on your desktop (92 seconds, captioned). It runs "
+      *B(["<b>Video:</b> <font name='DVM'>Polarization Pipeline Demo.mp4</font> on your desktop (captioned). It runs "
           "the write-up's example tweets through every version, scores a real user and a copy-paste bot, and grades the "
           "models on random held-out tweets. Upload it to YouTube (unlisted) or wherever the portfolio form takes a link.",
           "<b>Executable / live:</b> <font name='DVM'>python demo/app.py</font> opens the web demo; "
           "<font name='DVM'>--cli \"tweet\"</font> prints every version's call in the terminal; "
           "<font name='DVM'>--share</font> makes a temporary public link (about a week) if a reviewer wants to try it live.",
           "<b>Codebase:</b> the GitHub repo with all 46 commits. A branch, <font name='DVM'>desktop-sync-and-demo</font>, adds "
-          "the desktop code (the version the saved model needs), the demo and the evaluation scripts. It's committed locally "
-          "but not pushed yet."]),
+          "the desktop code (the version the saved model needs), the demo, Mark 7 and the evaluation scripts. It's committed "
+          "locally, with its real dates, but not pushed yet."]),
       P("Marks 1–3 in the demo are the original code copied unchanged from their commits, so the demo also proves the "
-        "history is real: anyone can watch Mark 2 break the clown-car tweet. The demo is honest about the limits too. It "
-        "shows a note about new tweets being harder, and the last tab's draws are truly random, so the tally can come out "
-        "low on a short run. In the recorded take the final model went 1 for 4, which is bad luck against its 80%."),
-      fig("../demo_take4/shot_tab1_1.png", "Figure 8. The demo's first tab on the clown-car tweet: Mark 1 right, Mark 2 broken, "
-          "Mark 3 fixed, both models right.", w=CONTENT_W * 0.9)]
+        "history is real: anyone can watch Mark 2 break the clown-car tweet. The demo is honest about the limits too. The "
+        "last tab's draws are truly random, so the tally moves around on a short run, and Mark 7's misses stay visible."),
+      fig("../demo_mark7/shot_tab1_3.png", "Figure 10. The demo's first tab on “I love Biden”: the rules give up, Mark 4 and "
+          "the old final model say Trump, Mark 7 gets it.", w=CONTENT_W * 0.9)]
 
 # appendix
 rows = [l.strip().split("|", 2) for l in open(os.path.join(W, "commits.txt"), encoding="utf8") if l.strip()]
