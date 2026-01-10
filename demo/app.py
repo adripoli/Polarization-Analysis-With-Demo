@@ -203,6 +203,9 @@ def _pop_plot(user_mean):
 # ── tab 3: grade it yourself on real held-out tweets ──────────────────────
 HELD = pd.read_csv(os.path.join(HERE, "data", "heldout.csv"))
 HELD = HELD[HELD.label != 2].reset_index(drop=True)  # political ones only, same as the report
+# skip the sweary ones so the demo's safe to show anyone (scoreboard still uses all 155)
+HELD = HELD[~HELD.cleaned_text.str.contains(r"\b(?:shit|fuck|bastard|bitch|ass|damn|crap|dick|piss)\w*",
+                                            case=False, regex=True)].reset_index(drop=True)
 BOARD = json.load(open(os.path.join(HERE, "data", "scoreboard.json")))
 
 
@@ -234,14 +237,16 @@ EXAMPLES = [
     "Four more years! Best economy ever, nobody has done more for this country #Trump2020",
     "Vote him out. We can't take four more years of this chaos. #BidenHarris2020",
 ]
-USER_EXAMPLES = [
-    "Four more years! #MAGA\nBiden can't even remember what state he's in\nThe economy was booming before covid, give him another term\n"
-    "Sleepy Joe and the radical left want to defund the police",
-    "Vote him out #BidenHarris2020\nTrump lied about covid and people died\nCan't wait for a president who believes in science\n"
-    "Early voted for Biden today!",
-    "Get your official election 2020 shirts now at our store!\nGet your official election 2020 shirts now at our store!\n"
-    "Get your official election 2020 shirts now at our store!\nGet your official election 2020 shirts now at our store!",
-]
+# example users = 8 random real tweets per side from the held-out set (random_state=0,
+# picked before looking at the results, swear words filtered out first so it's
+# safe to show), plus a copy-paste bot
+_EX = json.load(open(os.path.join(HERE, "data", "example_users.json")))
+NL = chr(10)  # newline, kept out of string literals on purpose
+USER_EXAMPLES = [NL.join(_EX["trump"]), NL.join(_EX["biden"]),
+                 NL.join(["Get your official election 2020 shirts now at our store!"] * 4)]
+HONEST = ("**Heads up:** the models learned from ~1,000 hand-labeled tweets taken from a narrow slice of the data. "
+          "On held-out tweets like those they're right 76-80% of the time. On 12 tweets I wrote myself, both got 7 "
+          "right, so typing your own is a good way to see where they break.")
 
 
 def build_ui():
@@ -252,6 +257,7 @@ def build_ui():
         with gr.Tab("1. One tweet, every Mark"):
             box = gr.Textbox(label="Tweet", lines=2, placeholder="Type any election tweet...")
             go = gr.Button("Run through every Mark", variant="primary")
+            gr.Markdown(HONEST)
             out = gr.HTML()
             gr.Examples(EXAMPLES, inputs=box, label="Try the tweets from the write-up")
             go.click(tab_one, box, out); box.submit(tab_one, box, out)
@@ -259,7 +265,7 @@ def build_ui():
             ubox = gr.Textbox(label="A user's tweets, one per line", lines=6)
             ugo = gr.Button("Score this user", variant="primary")
             uout = gr.HTML(); uplot = gr.Plot(show_label=False)
-            gr.Examples(USER_EXAMPLES, inputs=ubox, label="Example users (the last one is a copy-paste bot)")
+            gr.Examples(USER_EXAMPLES, inputs=ubox, label="Example users: 8 real pro-Trump test tweets, 8 real pro-Biden test tweets, and a copy-paste bot")
             ugo.click(tab_user, ubox, [uout, uplot])
         with gr.Tab("3. Grade it yourself"):
             gr.Markdown("Random tweets from the **held-out test set**: hand-labeled by me, never used in training. "

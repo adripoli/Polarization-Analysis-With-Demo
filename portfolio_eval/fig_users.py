@@ -1,33 +1,43 @@
-# fig 7 fake
+# fig 7 who
 import os, json, numpy as np
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import figs as F  # reuse the palette
 
 W = os.path.dirname(os.path.abspath(__file__))
-U = json.load(open(os.path.join(W, "users_light.json")))
+L = json.load(open(os.path.join(W, "users_light.json")))
+T = json.load(open(os.path.join(W, "users_eval.json")))["results"]
 marks = ["Mark 4", "Mark 5", "Mark 6"]
-fig, (a, b) = plt.subplots(1, 2, figsize=(11, 3.6))
 x = np.arange(3)
-for ax, key, share, col, title in [
-        (a, "all_identical_users", "all_identical_share", F.ORANGE, "Users whose every tweet is identical"),
-        (b, "mostly_non_english_users", "mostly_non_english_share", F.VIOLET, "Users posting mostly non-English")]:
-    v = [U[m][key] for m in marks]
-    known = [vi is not None for vi in v]
-    vals = [vi or 0 for vi in v]
+fig, (a, b, c) = plt.subplots(1, 3, figsize=(11.5, 3.5), gridspec_kw=dict(width_ratios=[1.35, 1, 1]))
+
+# left the top
+bw = 0.36
+for k, (key, col, lab) in enumerate([("top_copy_paste", F.ORANGE, "copy-paste accounts"),
+                                     ("top_non_english", F.VIOLET, "mostly non-English")]):
+    v = [T[m][key] for m in marks]
+    a.bar(x + (k - 0.5) * bw, v, bw, color=col, edgecolor=F.SURF, linewidth=2, label=lab)
+    for xi, vi in zip(x, v):
+        a.text(xi + (k - 0.5) * bw, vi + 0.02, f"{vi*100:.0f}%", ha="center", fontsize=8.5, color=F.INK)
+a.set_ylim(0, 1.18); a.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
+a.legend(frameon=False, fontsize=8, loc="upper right")
+a.set_title("Top 100 “most polarized” users", loc="left", fontsize=11)
+
+# middle right population
+for ax, key, col, title in [(b, "all_identical_users", F.ORANGE, "Users whose every\ntweet is identical"),
+                            (c, "mostly_non_english_users", F.VIOLET, "Users posting\nmostly non-English")]:
+    v = [L[m][key] for m in marks]
+    vals = [vi or 0 for vi in v]; top = max(vals)
     ax.bar(x, vals, 0.55, color=col, edgecolor=F.SURF, linewidth=2)
-    top = max(vals)
-    for xi, m, vi, k in zip(x, marks, vals, known):
-        if not k:
-            # mark 4 never
-            ax.text(xi, top * 0.04, "not checked\nin Mark 4", ha="center", fontsize=8.5, color=F.INK2)
-            continue
-        lab = f"{vi:,}" + (f"\n{U[m][share]*100:.0f}% of users" if vi else "")
-        ax.text(xi, vi + top * 0.03, lab, ha="center", va="bottom", fontsize=9, color=F.INK)
+    for xi, vi, raw in zip(x, vals, v):
+        ax.text(xi, (vi + top * 0.03) if raw is not None else top * 0.04,
+                f"{vi:,}" if raw is not None else "not\nchecked", ha="center", va="bottom", fontsize=8.5,
+                color=F.INK if raw is not None else F.INK2)
+    ax.set_ylim(0, top * 1.25)
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda y, _: f"{y/1000:.0f}k" if y else "0"))
+    ax.set_title(title, loc="left", fontsize=11)
+for ax in (a, b, c):
     ax.set_xticks(x); ax.set_xticklabels(marks); ax.grid(axis="x", visible=False)
-    ax.set_ylim(0, top * 1.3)
-    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda y, _: f"{y:,.0f}"))
-    ax.set_title(title, loc="left")
-fig.tight_layout(w_pad=3)
+fig.tight_layout(w_pad=2.5)
 F.save(fig, "fig7_users.png")
 print("ok")

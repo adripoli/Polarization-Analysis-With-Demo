@@ -11,7 +11,8 @@ The scripts were run from a scratch folder. They take paths as arguments, and th
 3. `eval_keyword.py <commit_dir> <outdir>`: runs one Mark 1-3 commit's `score_tweet()` unchanged, gives `kw_<hash>.json`
 4. `eval_mark4.py <commit_dir> <outdir> full|frozen <seed>`: retrains e554bad / bd4d639 with their own code, gives `m4_*.json`
 5. `eval_final.py <outdir>`: grades `model/bertweet_finetuned/best_model.pt` on the held-out set, gives `final_eval.json`
-6. `stageA_clean.py` then `stageC_light.py`: Mark 5/6 cleaning + bot/non-English user counts (`stageB_score.py` / `stageC_users.py` = the model-based version, stopped early on low memory)
-7. `figs.py`, `fig_users.py`, `build_report.py`: charts and the PDF
+6. `stageA_clean.py`, then `stageC_light.py` (bot/non-English counts, no model) and `stageB_score_v2.py` + `stageC_users.py` (scores all 1.4M unique tweets in chunks, then the top-100 check). `stageB_score.py` is the first version that ran out of RAM; kept for the record
+6b. `probe_side.py`: the 12 fresh tweets that show how the models do outside their training slice
+7. `figs.py`, `fig_users.py`, `build_report.py`, `build_short.py`: charts and both PDFs. `record_demo.py` + `make_video.py`: the demo video (needs `pip install playwright` + `python -m playwright install chromium`, and ffmpeg)
 
 Heads up: the saved `best_model.pt` predicts Spam for every tweet (collapsed run). See section 7 of the report.

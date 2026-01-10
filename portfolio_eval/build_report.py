@@ -108,6 +108,7 @@ m4 = np.array([json.load(open(f))["pol_acc"] for f in sorted(glob.glob(os.path.j
 m4f = np.array([json.load(open(f))["pol_acc"] for f in sorted(glob.glob(os.path.join(W, "m4_frozen_*.json")))])
 fin = json.load(open(os.path.join(W, "final_eval.json")))
 U = json.load(open(os.path.join(W, "users_light.json")))
+T = json.load(open(os.path.join(W, "users_eval.json")))["results"]
 pct = lambda x, d=0: f"{x*100:.{d}f}%"
 K1, K2, K3 = kw["1ba92a1"], kw["22f45be"], kw["a2f78b5"]
 
@@ -162,7 +163,7 @@ s += [Spacer(1, 0.35 * inch), P("MIT MAKER PORTFOLIO · REFERENCE NOTES", "small
         " ·  4. Timeline  ·  5. Mark by mark  ·  6. Final pipeline and results "
         " ·  7. Things found while rerunning everything  ·  8. Fact-check of the original notes "
         " ·  9. Mark ? (what's next)  ·  10. Engineering lessons  ·  "
-        "11. Using this for MIT  ·  Appendix: every commit, test details", "small"),
+        "11. Using this for MIT  ·  12. Demo and codebase  ·  Appendix: every commit, test details", "small"),
       PageBreak()]
 
 # 1 one paragraph
@@ -347,7 +348,9 @@ s += mark("Mark 4: fine-tune BERTweet", "Oct 19 – Nov 30 · commits 5343537 �
              f"07422d9). Measured on the full data: of the {U['Mark 4']['users_2plus']:,} users with 2+ tweets, "
              f"<b>{U['Mark 4']['all_identical_users']:,} ({pct(U['Mark 4']['all_identical_share'])})</b> only ever posted "
              "one tweet, over and over. Every one of them gets a spread of exactly zero whatever the model says, so they "
-             "all tie for first place on the “most polarized” list.")],
+             "all tie for first place on the “most polarized” list. Scoring all 1.75M tweets with the Mark 4 model "
+             f"and ranking like Mark 4 did: <b>{pct(T['Mark 4']['top_copy_paste'])} of the top 100</b> were copy-paste "
+             f"accounts, and {pct(T['Mark 4']['top_non_english'])} were mostly non-English.")],
           [P(f"<b>Rerun on 155 held-out political tweets:</b> <b>{pct(ful)} ± {m4.std()*100:.1f}</b> correct (\u00b1 = points of spread) across 5 "
              f"retrains, with a call on every tweet. Frozen encoder: {pct(frz)}. Both are way above the 53% you'd get by "
              "always guessing Trump. From ~9% to ~76% is the biggest single jump in the project."),
@@ -361,6 +364,7 @@ s += [fig("fig4_loss.png", "Figure 5. Training loss from the reruns. Thick line 
           w=CONTENT_W * 0.82)]
 
 u4, u5, u6 = U["Mark 4"], U["Mark 5"], U["Mark 6"]
+t4, t5, t6 = T["Mark 4"], T["Mark 5"], T["Mark 6"]
 s += mark("Mark 5: clean out short and repeated tweets", "Dec 2–5 · commits 1503a65 → 27dc538 · 4 commits",
           [*B(["<b>Try 1:</b> drop tweets under 20 characters (1503a65). Too crude. Real short tweets got dropped, and spam "
                "that padded itself with hashtags slipped through.",
@@ -377,8 +381,10 @@ s += mark("Mark 5: clean out short and repeated tweets", "Dec 2–5 · commits 1
              f"<b>Fake-perfect users</b> (every tweet identical) went from {u4['all_identical_users']:,} to "
              f"{u5['all_identical_users']}. That's by design, since the dedupe collapses them to one tweet. "
              f"But now {u5['mostly_non_english_users']:,} of the {u5['users_2plus']:,} remaining users "
-             f"({pct(u5['mostly_non_english_share'])}) post mostly in other languages. Near-duplicate spam (same text, "
-             "tiny changes) also still gets through.")],
+             f"({pct(u5['mostly_non_english_share'])}) post mostly in other languages. <b>Top 100:</b> copy-paste "
+             f"accounts {pct(t4['top_copy_paste'])} → {pct(t5['top_copy_paste'])}, but "
+             f"{pct(t5['top_non_english'])} of the new top 100 post mostly in other languages. Near-duplicate spam "
+             "(same text, tiny changes) also still gets through.")],
           "Find out why some of the worst predictions were coming out near-random.")
 
 s += mark("Mark 6: English only", "Dec 6–9 · commits 4b58e61 → 8a5e937 · 4 commits",
@@ -395,11 +401,16 @@ s += mark("Mark 6: English only", "Dec 6–9 · commits 4b58e61 → 8a5e937 · 4
           [P(f"<b>On all 1.75M tweets:</b> 350,610 of the remaining 1,305,322 tweets (27%) were flagged non-English, leaving "
              f"954,712. Mostly-non-English users went from {u5['mostly_non_english_users']:,} (Mark 5) to "
              f"{u6['mostly_non_english_users']}, leaving {u6['users_2plus']:,} users with 2+ tweets to rank. "
-             "Your commit notes say one full run took about 5 hours on the 3070.")],
-          "Tidy it into proper stages and give the model a real spam class instead of relying on word counts.")
-s += [fig("fig7_users.png", "Figure 6. Same 1.75M tweets; only the cleaning changes. Left: users guaranteed a fake "
-          "“perfect” zero spread because every tweet they posted is identical. These are the bots that topped "
-          "the Mark 4 ranking. Right: users whose tweets are mostly not English, which BERTweet can't read.")]
+             f"<b>Top 100:</b> mostly-non-English {pct(t5['top_non_english'])} → {pct(t6['top_non_english'])}, "
+             f"copy-paste {pct(t6['top_copy_paste'])}. But the top 100 still had a <b>median of "
+             f"{t6['top_count_median']:.0f} tweets each</b>: ranking by lowest spread rewards tiny accounts, because two "
+             "similar tweets look perfectly consistent. Your commit notes say one full run took about 5 hours on the 3070.")],
+          "Tidy it into proper stages, give the model a real spam class instead of relying on word counts, and replace "
+          "the lowest-spread ranking with a score that accounts for how many tweets someone posted.")
+s += [fig("fig7_users.png", "Figure 6. Same 1.75M tweets; only the cleaning changes. Left: who makes up the top 100 "
+          "“most polarized” users when you rank by lowest spread (every tweet scored by the Mark 4 model). "
+          "Middle and right: counts across all users. Accounts that post one tweet on repeat get a fake “perfect” "
+          "zero spread; non-English tweets are ones BERTweet can't read.")]
 
 # 6 final
 fp = fin["test_heldout"]["pol_acc"]
@@ -421,7 +432,8 @@ s += [CondPageBreak(3.2 * inch), P("6. The final pipeline and results", "h1"),
           "<b>Leakage fix</b> (desktop version). Hand labels used to be copied 5× <i>before</i> the train/validation "
           "split, so copies of the same tweet landed on both sides and validation scores looked better than reality. Now "
           "the copies are made after the split, training side only."]),
-      box([P(f"<b>Results.</b> Stance accuracy on the 155 held-out tweets: <b>{pct(fp)}</b> (vs {pct(ful)} for Mark 4). "
+      box([P(f"<b>Results.</b> Stance accuracy on the 155 held-out tweets: <b>{pct(fp)}</b> (vs {pct(ful)} for Mark 4; both "
+             "drop to about 7 out of 12 on brand-new tweets, see section 7). "
              "From the 2nd full run: 30,525 users kept after cleaning and spam filtering. Two clusters: pro-Biden centered "
              "at −0.42 (53% of users) and pro-Trump at +0.31 (47%), with an overlap of 0.077.")], border=BLUE),
       Spacer(1, 8),
@@ -450,10 +462,18 @@ finds = [
      "and 2 over 1 (37,249). Fair to say: two clusters fit much better than one. Not fair to say: the data shows exactly two."),
     ("The activity correlation is mostly baked in.", "Tweet count vs final polarization score: r = 0.146. But the final score "
      "multiplies in log(tweet count), so part of that is automatic. On the raw score it's r = −0.05."),
+    ("It's best on tweets like its training data.", "All 1,000 hand labels came from the first 500 rows of each file, "
+     "which look like the same few days in mid-October 2020. The held-out test tweets come from that same slice, so the "
+     "76–80% is “in-distribution”. On 12 brand-new tweets written for this report (6 obviously pro-Trump, 6 "
+     "obviously pro-Biden), Mark 4 and the final model each got only 7 right. The saved final model also tends to default to "
+     "Biden, because its collapsed spam head leaves only ~3% of the probability for the two political classes. Say this in "
+     "the write-up; knowing where your model breaks is a strength, not a weakness."),
     ("Mark 3 crashes on the full dataset.", "167 empty tweets + a missing str() cast. For the rerun it was fed empty strings "
      "instead of blanks; the scoring code itself was untouched."),
-    ("Desktop and GitHub don't match.", "The desktop copy is newer (mean pooling, label smoothing, the leakage fix, rule-based "
-     "spam flags, the cache). If you link the repo, push the desktop version first so readers see the code you describe."),
+    ("Desktop and GitHub don't match.", "GitHub has the older model (first-token pooling, no inner dropout), so the saved "
+     "best_model.pt won't even load with GitHub's model.py. GitHub is also missing the leakage fix, label smoothing, the "
+     "rule-based spam flags and the cache. Going the other way, GitHub's code comments were rewritten in a casual style "
+     "that the desktop copy doesn't have. A branch syncing the desktop code + the demo is ready (see section 12)."),
 ]
 s += [table([["Finding", "Details"]] + [[f"<b>{a}</b>", b] for a, b in finds], [1.7 * inch, CONTENT_W - 1.7 * inch])]
 
@@ -486,8 +506,8 @@ s += [P("9. Mark ?: what I'd do next", "h1"),
       *B(["<b>Real spam detection.</b> The spam class collapsed because it only had 71 examples next to ~990k political ones. "
           "Label a few hundred more spam tweets, or build a small separate model on account behavior (posting rate, share of "
           "repeated tweets) instead of tweet text.",
-          "<b>A bigger, double-checked test set.</b> 169 test tweets means every percentage has roughly ±3 points of "
-          "wiggle room. Label another 1,000 and have a second person label a chunk of them to see how often two humans agree.",
+          "<b>A bigger, double-checked test set.</b> 155 political test tweets means every percentage has about ±6 points of "
+          "wiggle room (95% range). Label another 1,000 and have a second person label a chunk of them to see how often two humans agree.",
           "<b>Keep the non-English tweets.</b> A multilingual tweet model (like XLM-T) instead of throwing away 27% of the data.",
           "<b>Fix the weak labels.</b> Measure how wrong the hashtag labels really are across the whole dataset, not just "
           "the first 500 rows, or drop them for something better.",
@@ -535,6 +555,26 @@ s += [P("11. Using this for the MIT Maker Portfolio", "h1"),
              "times as each version broke in a new way, and took held-out accuracy from 8% with keyword rules to 80% with "
              "a transformer I fine-tuned on 1,000 tweets I labeled myself.”")], border=AQUA)]
 
+# 12 demo codebase
+s += [CondPageBreak(4 * inch), P("12. Demo and codebase (what MIT asks for)", "h1"),
+      P("For code projects MIT wants the codebase (ideally version-controlled) <i>and</i> a working demo (video, live, or "
+        "executable). You now have all three kinds:"),
+      *B(["<b>Video:</b> <font name='DVM'>Polarization Pipeline Demo.mp4</font> on your desktop (92 seconds, captioned). It runs "
+          "the write-up's example tweets through every version, scores a real user and a copy-paste bot, and grades the "
+          "models on random held-out tweets. Upload it to YouTube (unlisted) or wherever the portfolio form takes a link.",
+          "<b>Executable / live:</b> <font name='DVM'>python demo/app.py</font> opens the web demo; "
+          "<font name='DVM'>--cli \"tweet\"</font> prints every version's call in the terminal; "
+          "<font name='DVM'>--share</font> makes a temporary public link (about a week) if a reviewer wants to try it live.",
+          "<b>Codebase:</b> the GitHub repo with all 46 commits. A branch, <font name='DVM'>desktop-sync-and-demo</font>, adds "
+          "the desktop code (the version the saved model needs), the demo and the evaluation scripts. It's committed locally "
+          "but not pushed yet."]),
+      P("Marks 1–3 in the demo are the original code copied unchanged from their commits, so the demo also proves the "
+        "history is real: anyone can watch Mark 2 break the clown-car tweet. The demo is honest about the limits too. It "
+        "shows a note about new tweets being harder, and the last tab's draws are truly random, so the tally can come out "
+        "low on a short run. In the recorded take the final model went 1 for 4, which is bad luck against its 80%."),
+      fig("../demo_take4/shot_tab1_1.png", "Figure 8. The demo's first tab on the clown-car tweet: Mark 1 right, Mark 2 broken, "
+          "Mark 3 fixed, both models right.", w=CONTENT_W * 0.9)]
+
 # appendix
 rows = [l.strip().split("|", 2) for l in open(os.path.join(W, "commits.txt"), encoding="utf8") if l.strip()]
 starts = {"da08515": "1", "112781e": "2", "9f440ef": "3", "5343537": "4", "1503a65": "5", "4b58e61": "6",
@@ -560,9 +600,10 @@ s += [P("Appendix B. Test details", "h1"),
           ". Frozen (bd4d639), 3 seeds: " + ", ".join(pct(x, 1) for x in m4f) + ".",
           "<b>User checks (Figure 6):</b> run on every tweet with Mark 5/6's own clean.py (commit 8a5e937). Only users "
           "with 2+ tweets count, since a spread needs two. “Fake-perfect” = all of a user's tweets are the same "
-          "text after stripping links. “Mostly non-English” = langdetect flags over half the user's tweets. A "
-          "model-based version (rescoring all 1.75M tweets with a Mark 4 model) was started but stopped when the "
-          "computer ran low on memory; the scripts for it are in portfolio_eval/ (stageB_score.py, stageC_users.py).",
+          "text after stripping links. “Mostly non-English” = langdetect flags over half the user's tweets. "
+          "Top-100 ranking: one Mark 4 model (seed 1) scores all 1.4M unique cleaned tweets, users with 2+ tweets are "
+          "sorted by lowest spread as Mark 4 did; “copy-paste account” = at least half the user's tweets repeated.",
+          "<b>Fresh-tweet probe:</b> 12 sentences written for this report (portfolio_eval/probe_side.py); a model counts as right if it picks the obvious side.",
           "<b>Scripts:</b> everything used to produce these numbers is saved in political_polarization/portfolio_eval/ on "
           "your desktop, so it can be rerun."])]
 

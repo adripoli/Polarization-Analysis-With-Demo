@@ -1,0 +1,186 @@
+{
+ "results": {
+  "Mark 4": {
+   "users_ranked": 118170,
+   "tweets": 1747818,
+   "zero_std_users": 22643,
+   "top_copy_paste": 1.0,
+   "top_non_english": 0.39,
+   "top_std_median": 0.0,
+   "top_count_median": 2.0,
+   "top_abs_stance_median": 0.3223876953125
+  },
+  "Mark 5": {
+   "users_ranked": 86573,
+   "tweets": 1305322,
+   "zero_std_users": 255,
+   "top_copy_paste": 0.06,
+   "top_non_english": 0.38,
+   "top_std_median": 0.0,
+   "top_count_median": 2.0,
+   "top_abs_stance_median": 0.4212646484375
+  },
+  "Mark 6": {
+   "users_ranked": 60862,
+   "tweets": 954712,
+   "zero_std_users": 166,
+   "top_copy_paste": 0.08,
+   "top_non_english": 0.05,
+   "top_std_median": 0.0,
+   "top_count_median": 2.0,
+   "top_abs_stance_median": 0.4356689453125
+  }
+ },
+ "examples": {
+  "Mark 4": [
+   {
+    "n": 2,
+    "distinct": 1,
+    "std": 0.0,
+    "text": "Tava Lifestyle New Vacia Detox Tea via @USER @USER #DonaldTrump #joebiden #khamilaharris @USER @USER @USER @USER @USER @USER @USER @USER @US"
+   },
+   {
+    "n": 2,
+    "distinct": 1,
+    "std": 0.0,
+    "text": "#JoeBiden will pardon #DonaldTrump for any convictions (other than fines). To \u201cmove the country forward \u201c"
+   },
+   {
+    "n": 2,
+    "distinct": 1,
+    "std": 0.0,
+    "text": "Just checked Facebook and Twitter and wanted to say congrats to Donald #Trump for crushing Joe #Biden in last night\u2019s debate. Also need to s"
+   },
+   {
+    "n": 2,
+    "distinct": 1,
+    "std": 0.0,
+    "text": "This is inappropriate for a social media company. I do not want #Trump to be reelected, but if positions were reversed, I would want court c"
+   },
+   {
+    "n": 2,
+    "distinct": 1,
+    "std": 0.0,
+    "text": "Sanders kazansayd\u0131 bi umut olabilirdi. #trump #biden"
+   },
+   {
+    "n": 2,
+    "distinct": 1,
+    "std": 0.0,
+    "text": "V O T E Stylo sur papier (30 x 21 cm) #usa #USAelection2020 #PresidentialElection #dessin #drawing #JoeBiden #DonaldTrump #WashingtonDC #pai"
+   },
+   {
+    "n": 2,
+    "distinct": 1,
+    "std": 0.0,
+    "text": "Congrats USA, for getting rid of one virus. #biden #trump #usa #Covid"
+   },
+   {
+    "n": 2,
+    "distinct": 1,
+    "std": 0.0,
+    "text": "Twitter seems to have become a sensible place now..some turned philosopher, some righteous, some preacher and few have become \u0936\u093e\u092f\u0930 .. \u0916\u0941\u0936\u0940 \u0914"
+   }
+  ],
+  "Mark 5": [
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "Avec l'affaire #HunterBiden nous devons savoir qui \u00e0 appuy\u00e9 sur la g\u00e2chette et a fait sortir cette affaire. Ce n'est pas les m\u00e9dias, ni les "
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "Congratulating @USER on becoming the 46th President of The United States Of America. #JoeBiden @USER"
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "#JoeBiden Presidente de los Estados Unidos de Am\u00e9rica #JoeBiden2020 #BidenHarris2020 #BidenPresident \ud83c\uddfa\ud83c\uddf8"
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "Are you still confused for who to vote for? Well let me just leave this here for you. #JoeBiDEN #Exercise #WorkingOut #NoDaysOff #BroLifts #"
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "Regardez moi cet enfant, il va bouder pour le restant de sa vie #Elections2020 #JoeBiden #Trump"
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "For video message click the link below #JoeBiden CONGRATULATIONS PRESIDENT BIDEN VIDEO MESSAGE"
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "@USER #JoeBiden was the guy on the right hand side of your screen! (Dude, you just embarrassed yourself)"
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "Everyone needs to heed @USER CEO @USER's warnings about Big Tech censorship of the president going into Election Day. They have it in for Tr"
+   }
+  ],
+  "Mark 6": [
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "Congratulating @USER on becoming the 46th President of The United States Of America. #JoeBiden @USER"
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "Are you still confused for who to vote for? Well let me just leave this here for you. #JoeBiDEN #Exercise #WorkingOut #NoDaysOff #BroLifts #"
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "@USER #JoeBiden was the guy on the right hand side of your screen! (Dude, you just embarrassed yourself)"
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "Everyone needs to heed @USER CEO @USER's warnings about Big Tech censorship of the president going into Election Day. They have it in for Tr"
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "@USER Done! Voted for @USER by mail and it's been counted!! I have 4 first time voters in my house, my 3 children and my husband who became "
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "I dont care if we need to use lawyers and the courts for this election. We as Americans have a right to know our elections are FREE OF CORRU"
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "@USER @USER @USER bad look for #trump"
+   },
+   {
+    "n": 2,
+    "distinct": 2,
+    "std": 0.0,
+    "text": "Day 6 of telling @USER he's a dumbass #DonaldTrump #DumbassDonald"
+   }
+  ]
+ }
+}
