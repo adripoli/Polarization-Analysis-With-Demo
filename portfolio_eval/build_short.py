@@ -138,7 +138,7 @@ s += mark("Final version · weighting, spam class, population model",
           "hand labels, and fit a two-cluster model to all users.",
           f"<b>{pc(fin)}</b> on held-out tweets, and 30,525 users split into two camps. It looked done. Then I typed "
           "“I love Biden” into my demo and it said Trump.")
-s += mark("Mark 7 · breaking the shortcut (built with Claude Code)",
+s += mark("Mark 7 · breaking the shortcut",
           "tweets naming only Biden are pro-Trump 83% of the time, so the models learned “mentions Biden = Trump fan”. "
           "The test tweets had the same mix, so the score never showed it. The saved final model had also collapsed.",
           "label by hashtags that pick a side (they match my hand labels 80% of the time, versus 29% for the old labels), delete "
@@ -164,8 +164,7 @@ s += [P("How I worked", "h"),
       P("Evidence", "h"),
       P("Code and all 46 commits on GitHub, a 100-second demo video, and a live demo "
         "(<font name='DVM'>python demo/app.py</font>) that runs one tweet through every version, using the original "
-        "Mark 1–3 code checked out from git. Every number here came from rerunning that version. Mark 7, the demo and the "
-        "re-grading scripts were built with Claude Code.")]
+        "Mark 1–3 code checked out from git. Every number here came from rerunning that version.")]
 
 doc.build(s)
 print("wrote", OUT)

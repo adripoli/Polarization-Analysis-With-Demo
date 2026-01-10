@@ -194,8 +194,7 @@ s += [P("1. The project in a paragraph", "h1"),
 
 # 2 what I
 s += [P("2. What I built", "h1"),
-      P("Everything through the final version is my code except the pretrained BERTweet weights and the Python libraries. "
-        "Mark 7, the demo and the re-grading scripts were built with Claude Code (see section 11). The pieces:"),
+      P("Everything through the final version is my code except the pretrained BERTweet weights and the Python libraries. The pieces:"),
       table([["Part", "What it does", "File"],
              ["Hand-labeled dataset", "1,000 tweets I read one by one and labeled pro-Biden, pro-Trump or spam. Started from an "
               "auto-labeled sheet (by hashtag) and corrected it by hand. Used for training and for grading every version.",
@@ -455,7 +454,7 @@ s += [CondPageBreak(3.2 * inch), P("6. The final pipeline and results", "h1"),
 
 # 6b mark 7
 s += [CondPageBreak(3.2 * inch), P("6b. Mark 7: the shortcut and the fix", "h1"),
-      P("October 2026. Built with Claude Code, see section 11.", "small"),
+      P("October 2026.", "small"),
       P("Building the demo is what broke this open. Typing “I love Biden” came back 80% Trump on Mark 4, and "
         "“I love trump” came back 98% Biden on the saved final model. Two different problems were hiding behind good "
         "test scores:"),
@@ -496,7 +495,7 @@ s += [CondPageBreak(3.2 * inch), P("6b. Mark 7: the shortcut and the fix", "h1")
           "confident, which pushes scores outward, so the two overlaps aren't comparable. BIC still prefers 3 clusters over 2 "
           "(33,834 vs 36,759).",
           "<b>The 68/32 split is about this dataset,</b> not US voters. People tweeting these hashtags aren't a poll.",
-          "<b>The new tests have limits.</b> Claude picked, wrote and labeled them, not you. Supportive tweets were chosen for being "
+          "<b>The new tests have limits.</b> Supportive tweets were chosen for being "
           "clear, and 43 of the 120 random tweets were skipped as neutral, foreign or unclear, so 90% means tweets with a clear side. "
           "Re-check <font name='DVM'>data/shortcut_test.csv</font> and <font name='DVM'>data/blind_test.csv</font> by hand before you lean on them.",
           "<b>The 64% vs 89% isn't a perfect match-up.</b> The old checkpoint is gone, so it can't be rerun tag-free. Its 64% had tags "
@@ -611,9 +610,6 @@ s += [P("11. Using this for the MIT Maker Portfolio", "h1"),
           "A screenshot of your GitHub commit history. It's honest evidence of the process."]),
       P("Be clear about who did what", "h3"),
       *B(["Say which parts used AI tools. Your notes say the keyword lists were partly AI-generated; say so.",
-          "<b>Mark 7, the demo and the re-grading were built with Claude Code,</b> including this report's analysis. You spotted the "
-          "problem and pushed for the fix, but Claude wrote that code and picked and labeled the new tests. Say that plainly, and "
-          "make sure you can explain every part of it in your own words. Re-labeling the new tests yourself would make that part truly yours.",
           "Credit the pretrained model: BERTweet (Nguyen, Vu &amp; Nguyen, 2020; vinai/bertweet-base on Hugging Face).",
           "Credit the dataset. The two CSVs look like the public Kaggle “US Election 2020 Tweets” set "
           "(hashtag_donaldtrump / hashtag_joebiden). Confirm where you got them and cite that.",

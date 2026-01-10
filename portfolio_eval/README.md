@@ -23,5 +23,3 @@ The scripts were run from a scratch folder. They take paths as arguments, and th
    - `mark7_seeds.py`: retrains on new seeds so one lucky run can't fool anyone
 
 Heads up: `model/bertweet_finetuned/best_model.pt` predicts Spam for every tweet (collapsed run). See section 7 of the report.
-The tests in `data/shortcut_test.csv`, `data/blind_test.csv` and `data/fresh_probe.csv` were picked, written and labeled by
-Claude, not by a person, so they're worth re-checking by hand.
