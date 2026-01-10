@@ -3,8 +3,8 @@
 # Paths
 TRUMP_CSV      = "trump_tweets.csv"
 BIDEN_CSV      = "biden_tweets.csv"
-OUTPUT_DIR     = "outputs/"
-MODEL_DIR      = "model/bertweet_finetuned/"   # saved after fine
+OUTPUT_DIR     = "outputs/mark7/"              # new folder old
+MODEL_DIR      = "model/mark7/"                # same deal for
 STAGE0_CACHE   = "outputs/cache/stage0_cleaned.pkl"   # cached clean lang
 
 # Column names expected
@@ -24,7 +24,10 @@ BATCH_SIZE      = 32           # reduce to 16
 
 # Stage 3 Classification
 MANUAL_LABELS_CSV = "data/manual_labels.csv"   # set to None
-MANUAL_LABEL_WEIGHT = 5        # repeat manual samples
+MANUAL_LABEL_WEIGHT = 20        # repeat manual samples
+LOCKED_TEST_CSVS = ["data/heldout_test.csv", "data/shortcut_test.csv", "data/fresh_probe.csv"]
+WEAK_PER_CELL    = 12000       # tweets per side
+KEEP_TAG_SHARE   = 0.25        # leave side tags
 NUM_LABELS      = 3            # 0 Pro Biden
 HIDDEN_DIM      = 256          # intermediate layer size
 DROPOUT         = 0.3

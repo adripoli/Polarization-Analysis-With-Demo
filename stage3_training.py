@@ -7,11 +7,9 @@
 #                   a stance score [-1, +1] for every tweet
 #
 # Labelling strategy (weak supervision):
-#   Since manually labelling 750k tweets is infeasible, we use the hashtag
-#   as a weak label:
-#     • Tweets containing ONLY #trump  → weakly labelled Pro-Trump  (class 1)
-#     • Tweets containing ONLY #joebiden → weakly labelled Pro-Biden (class 0)
-#     • A small hand-labelled set (~hundreds) is added for ground truth.
+#   Mark 7: side-picking hashtags are the weak label (#Trump2020, #VoteBiden).
+#   Yank the tag so the model has to read the words, then even out who's
+#   mentioned so "says Biden = Trump fan" stops working. Hand labels on top.
 #
 # Data-integrity rules (see README of this file):
 #   1. The train/val split is STRATIFIED on label (so rare classes like Spam
@@ -37,10 +35,12 @@ from config import (
     BATCH_SIZE, EPOCHS, LEARNING_RATE, HEAD_LEARNING_RATE, TRAIN_SPLIT,
     NUM_LABELS, MODEL_DIR, MAX_LENGTH,
     MANUAL_LABELS_CSV, MANUAL_LABEL_WEIGHT,
+    LOCKED_TEST_CSVS, WEAK_PER_CELL, KEEP_TAG_SHARE,
     LABEL_SMOOTHING, EARLY_STOPPING_PATIENCE,
     USE_AMP, NUM_WORKERS, INFERENCE_BATCH_SIZE,
 )
 from model import BERTweetStanceClassifier, load_tokenizer
+from stance_tags import split_tags, model_text, text_key, mention_cell
 
 
 # ── Dataset ────────────────────────────────────────────────────────────────
@@ -92,26 +92,44 @@ def pre_tokenize(texts: list[str], tokenizer) -> tuple[torch.Tensor, torch.Tenso
 
 # ── Weak labelling ─────────────────────────────────────────────────────────
 
-def assign_weak_labels(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Assign a weak training label to each tweet based on its source hashtag.
+def locked_keys() -> set:
+    # test tweets. training doesn't get to touch these.
+    keys = set()
+    for path in LOCKED_TEST_CSVS:
+        keys |= set(pd.read_csv(path)["cleaned_text"].astype(str).map(text_key))
+    return keys
 
-    Label map:
-        0 → Pro-Biden  (tweet came from the #joebiden CSV)
-        1 → Pro-Trump  (tweet came from the #trump CSV)
-    """
-    label_map = {"biden": 0, "trump": 1}
 
-    df = df.copy()
-    df["label"] = df["source"].map(label_map)
-    df = df.dropna(subset=["label"])
+def assign_weak_labels(df: pd.DataFrame, locked: set) -> pd.DataFrame:
+    """Label tweets by side-picking hashtags, then balance who's mentioned."""
+    parts = df["cleaned_text"].astype(str).map(split_tags)
+    df = pd.DataFrame({"raw": df["cleaned_text"].astype(str).values,
+                       "label": parts.str[0].values, "left": parts.str[1].values})
+    df = df[df["label"].notna()].copy()
     df["label"] = df["label"].astype(int)
+
+    # cell is based on the tag-free text, no cheating
+    df["left"] = df["left"].map(model_text)
+    df = df[df["left"].str.split().str.len() >= 5].drop_duplicates("left")
+    df["cell"] = df["left"].map(mention_cell)
+    # check both versions. a test tweet could sneak in with its tag yanked.
+    df = df[~df["left"].map(text_key).isin(locked) & ~df["raw"].map(text_key).isin(locked)]
+
+    # same count per side in every cell, so the name alone tells you nothing
+    picks = []
+    for _, g in df.groupby("cell"):
+        n = min(WEAK_PER_CELL, g["label"].value_counts().reindex([0, 1], fill_value=0).min())
+        if n > 0:
+            picks += [g[g["label"] == side].sample(n, random_state=42) for side in (0, 1)]
+    df = pd.concat(picks, ignore_index=True)
+
+    keep = np.random.default_rng(42).random(len(df)) < KEEP_TAG_SHARE
+    df["cleaned_text"] = np.where(keep, df["raw"].map(model_text), df["left"])
     df["is_manual"] = False
 
-    print(f"Weak labels assigned:")
-    print(f"  Pro-Biden  : {(df['label'] == 0).sum():,}")
-    print(f"  Pro-Trump  : {(df['label'] == 1).sum():,}")
-    return df
+    print("Stance-tag labels (balanced):")
+    print(pd.crosstab(df["cell"], df["label"]))
+    return df[["cleaned_text", "label", "is_manual"]]
 
 
 # ── Manual labels ──────────────────────────────────────────────────────────
@@ -182,13 +200,17 @@ def train(full_df: pd.DataFrame, device: torch.device) -> BERTweetStanceClassifi
     tokenizer = load_tokenizer()
 
     # ── 1. assemble labelled data (single copy of manual rows, no leakage) ─
-    weak_df = assign_weak_labels(full_df)[["cleaned_text", "label", "is_manual"]]
+    locked = locked_keys()
+    weak_df = assign_weak_labels(full_df, locked)
 
     if MANUAL_LABELS_CSV and os.path.exists(MANUAL_LABELS_CSV):
         manual_df = load_manual_labels(MANUAL_LABELS_CSV)[
             ["cleaned_text", "label", "is_manual"]
         ]
-        combined = pd.concat([weak_df, manual_df], ignore_index=True)
+        manual_df["cleaned_text"] = manual_df["cleaned_text"].map(model_text)
+        manual_df = manual_df[~manual_df["cleaned_text"].map(text_key).isin(locked)]
+        # hand labels go first so a dupe keeps the real label
+        combined = pd.concat([manual_df, weak_df], ignore_index=True)
     else:
         combined = weak_df
         if MANUAL_LABELS_CSV:
@@ -205,7 +227,7 @@ def train(full_df: pd.DataFrame, device: torch.device) -> BERTweetStanceClassifi
     train_df, val_df = train_test_split(
         combined,
         train_size=TRAIN_SPLIT,
-        stratify=combined["label"],
+        stratify=combined["label"].astype(str) + combined["is_manual"].astype(str),
         random_state=42,
     )
     print(f"Split: train={len(train_df):,}  val={len(val_df):,}")
@@ -231,6 +253,7 @@ def train(full_df: pd.DataFrame, device: torch.device) -> BERTweetStanceClassifi
     val_ids,   val_mask   = pre_tokenize(val_df["cleaned_text"].tolist(),   tokenizer)
     train_labels = torch.tensor(train_df["label"].values, dtype=torch.long)
     val_labels   = torch.tensor(val_df["label"].values,   dtype=torch.long)
+    val_hand     = val_df["is_manual"].values.astype(bool)  # the only val labels worth trusting
 
     train_set = TweetDataset(train_ids, train_mask, train_labels)
     val_set   = TweetDataset(val_ids,   val_mask,   val_labels)
@@ -336,7 +359,7 @@ def train(full_df: pd.DataFrame, device: torch.device) -> BERTweetStanceClassifi
         # ── validation ─────────────────────────────────────────────────────
         model.eval()
         total_val_loss = 0.0
-        all_preds, all_true = [], []
+        all_preds, all_true, spam_probs = [], [], []
 
         with torch.no_grad():
             for batch in tqdm(val_loader, desc=f"Epoch {epoch+1}/{EPOCHS} [val]  "):
@@ -352,9 +375,13 @@ def train(full_df: pd.DataFrame, device: torch.device) -> BERTweetStanceClassifi
                 preds = output["logits"].argmax(dim=-1).cpu().numpy()
                 all_preds.extend(preds)
                 all_true.extend(labels_batch.cpu().numpy())
+                spam_probs.extend(output["probs"][:, 2].float().cpu().numpy())
 
         avg_val_loss = total_val_loss / len(val_loader)
-        val_f1 = _macro_f1(all_true, all_preds)
+        all_true, all_preds = np.array(all_true), np.array(all_preds)
+        # pick the winner on hand labels, not hashtags
+        val_f1 = _macro_f1(all_true[val_hand], all_preds[val_hand])
+        print(f"  mean P(spam)={np.mean(spam_probs):.3f}  (way up near 1 = collapsed)")
 
         print(f"\nEpoch {epoch+1}: train_loss={avg_train_loss:.4f}  "
               f"val_loss={avg_val_loss:.4f}  val_macroF1={val_f1:.4f}")
@@ -413,24 +440,17 @@ def run_inference(
     print("\n=== Stage 3: Inference ===")
 
     tokenizer = load_tokenizer()
-    input_ids, attention_mask = pre_tokenize(df["cleaned_text"].tolist(), tokenizer)
-    dataset = TweetDataset(input_ids, attention_mask, labels=None)
-    loader  = DataLoader(
-        dataset,
-        batch_size=INFERENCE_BATCH_SIZE,
-        shuffle=False,
-        num_workers=NUM_WORKERS,
-        pin_memory=(device.type == "cuda"),
-    )
-
     use_amp = USE_AMP and device.type == "cuda"
     all_probs, all_stance = [], []
 
     model.eval()
     with torch.no_grad():
-        for batch in tqdm(loader, desc="Scoring tweets"):
-            input_ids_b      = batch["input_ids"].to(device, non_blocking=True)
-            attention_mask_b = batch["attention_mask"].to(device, non_blocking=True)
+        # tokenize in chunks. doing it all at once ate the RAM last time.
+        texts = df["cleaned_text"].astype(str).map(model_text).tolist()
+        for i in tqdm(range(0, len(texts), INFERENCE_BATCH_SIZE), desc="Scoring tweets"):
+            ids, mask = pre_tokenize(texts[i:i + INFERENCE_BATCH_SIZE], tokenizer)
+            input_ids_b      = ids.to(device, non_blocking=True)
+            attention_mask_b = mask.to(device, non_blocking=True)
 
             with autocast(enabled=use_amp):
                 output = model(input_ids_b, attention_mask_b)

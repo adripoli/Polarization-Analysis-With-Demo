@@ -4,7 +4,7 @@ import argparse
 import os
 import torch
 
-from config import MODEL_DIR
+from config import MODEL_DIR, OUTPUT_DIR
 from stage0_cleaning         import load_and_clean
 from stage3_training         import train, run_inference
 from stage4_5_user_analysis  import aggregate_users, compute_polarization
@@ -63,8 +63,8 @@ def main(skip_training: bool = False, rebuild_cache: bool = False):
     user_df = compute_polarization(user_df)
 
     # Save user scores
-    os.makedirs("outputs/", exist_ok=True)
-    user_scores_path = os.path.join("outputs/", "user_polarization_scores.csv")
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    user_scores_path = os.path.join(OUTPUT_DIR, "user_polarization_scores.csv")
     user_df.to_csv(user_scores_path, index=False)
     print(f"\n  User scores saved to {user_scores_path}")
 
@@ -72,7 +72,7 @@ def main(skip_training: bool = False, rebuild_cache: bool = False):
     gmm_stats = run_population_analysis(user_df)
 
     print("\n" + "=" * 60)
-    print("  Pipeline complete. Results saved to outputs/")
+    print("  Pipeline complete. Results saved to " + OUTPUT_DIR)
     print("=" * 60)
     print(f"\n  GMM overlap coefficient : {gmm_stats['gmm_overlap']:.4f}")
     print(f"  (closer to 0 = more polarized population)\n")
