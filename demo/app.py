@@ -246,7 +246,9 @@ USER_EXAMPLES = [NL.join(_EX["trump"]), NL.join(_EX["biden"]),
                  NL.join(["Get your official election 2020 shirts now at our store!"] * 4)]
 HONEST = ("**Heads up:** the models learned from ~1,000 hand-labeled tweets taken from a narrow slice of the data. "
           "On held-out tweets like those they're right 76-80% of the time. On 12 tweets I wrote myself, both got 7 "
-          "right, so typing your own is a good way to see where they break.")
+          "right, so typing your own is a good way to see where they break. The saved final model is the worse one "
+          "here: its spam head collapsed, so it snaps to one of about two answers (like 98% Biden) based on the "
+          "style of the tweet, not what it says. Mark 4 is the one actually reading your tweet.")
 
 
 def build_ui():
