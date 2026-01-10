@@ -1,5 +1,6 @@
-# stage4_5_user_analysis py stage
+# stage4_5_user_analysis py Stage
 
+import re
 import numpy as np
 import pandas as pd
 from scipy.stats import entropy as scipy_entropy
@@ -8,22 +9,33 @@ from config import (
     COL_USER,
     WEIGHT_STD, WEIGHT_ENTROPY, WEIGHT_CONSISTENCY,
     SPAM_USER_THRESHOLD, MIN_TWEETS_PER_USER,
+    MIN_CONTENT_WORDS, MIN_CLASSIFIER_CONFIDENCE,
 )
 
 
-# stage 4 helpers
+# Matches hashtags foo
+_NON_CONTENT_RE = re.compile(r"#\w+|@\w+")
+
+
+def _count_content_words(text: str) -> int:
+    """Count words in"""
+    stripped = _NON_CONTENT_RE.sub(" ", text)
+    return len(re.findall(r"\b\w+\b", stripped))
+
+
+# Stage 4 helpers
 
 def _mean_entropy(probs_biden: np.ndarray,
                   probs_trump: np.ndarray) -> float:
-    """average binary shannon"""
+    """Compute the average"""
     probs = np.column_stack([probs_biden, probs_trump])  # n_tweets 2
     tweet_entropies = scipy_entropy(probs.T, base=2)     # n_tweets
-    max_entropy = 1.0   # log2 2 max
+    max_entropy = 1.0   # log2 2 maximum
     return float(1 - (tweet_entropies.mean() / max_entropy))
 
 
 def _consistency_ratio(stance_scores: np.ndarray) -> float:
-    """of tweets on"""
+    """Proportion of tweets"""
     n = len(stance_scores)
     if n == 0:
         return 0.0
@@ -32,16 +44,37 @@ def _consistency_ratio(stance_scores: np.ndarray) -> float:
     return float(max(n_positive, n_negative) / n)
 
 
-# stage 4 aggregate
+# Stage 4 aggregate
 
 def aggregate_users(scored_df: pd.DataFrame) -> pd.DataFrame:
-    """works out per"""
+    """Compute per user"""
     print("\n=== Stage 4: User-Level Aggregation ===")
 
-    # a tweet counts
+    # Combine three spam
     scored_df = scored_df.copy()
     probs = scored_df[["prob_biden", "prob_trump", "prob_spam"]].values
-    scored_df["is_spam"] = probs.argmax(axis=1) == 2
+
+    # 1 Classifier argmax
+    classifier_spam = probs.argmax(axis=1) == 2
+
+    # 2 Low political
+    political_confidence = probs[:, :2].max(axis=1)
+    low_confidence = political_confidence < MIN_CLASSIFIER_CONFIDENCE
+
+    # 3 Too short
+    content_words = scored_df["cleaned_text"].apply(_count_content_words)
+    too_short = content_words < MIN_CONTENT_WORDS
+
+    scored_df["is_spam"] = classifier_spam | low_confidence | too_short
+
+    total = len(scored_df)
+    print(f"  Spam flagging (of {total:,} tweets):")
+    print(f"    Classifier (argmax = spam)    : {classifier_spam.sum():,}")
+    print(f"    Low political confidence      : {low_confidence.sum():,}  "
+          f"(max political prob < {MIN_CLASSIFIER_CONFIDENCE})")
+    print(f"    Too few content words         : {too_short.sum():,}  "
+          f"(< {MIN_CONTENT_WORDS} non-hashtag/mention words)")
+    print(f"    Combined (any rule)           : {scored_df['is_spam'].sum():,}")
 
     records = []
 
@@ -49,7 +82,7 @@ def aggregate_users(scored_df: pd.DataFrame) -> pd.DataFrame:
         tweet_count = len(group)
         spam_ratio  = float(group["is_spam"].mean())
 
-        # only compute stance
+        # Compute stance metrics
         non_spam = group[~group["is_spam"]]
         non_spam_count = len(non_spam)
         if non_spam_count == 0:
@@ -77,12 +110,12 @@ def aggregate_users(scored_df: pd.DataFrame) -> pd.DataFrame:
 
     user_df = pd.DataFrame(records)
 
-    # drop spam heavy
+    # Drop spam heavy
     before = len(user_df)
     user_df = user_df[user_df["spam_ratio"] <= SPAM_USER_THRESHOLD]
     dropped_spam = before - len(user_df)
 
-    # re check the
+    # Re enforce the
     before = len(user_df)
     user_df = user_df[user_df["non_spam_count"] >= MIN_TWEETS_PER_USER]
     user_df = user_df.reset_index(drop=True)
@@ -101,15 +134,15 @@ def aggregate_users(scored_df: pd.DataFrame) -> pd.DataFrame:
     return user_df
 
 
-# stage 5 polarization
+# Stage 5 polarization
 
 def compute_polarization(user_df: pd.DataFrame) -> pd.DataFrame:
-    """combines the per"""
+    """Combine per user"""
     print("\n=== Stage 5: Polarization Scoring ===")
 
     df = user_df.copy()
 
-    # normalize std to
+    # normalise to 0
     max_std = df["std_stance"].max()
     if max_std == 0:
         df["std_norm"] = 0.0
@@ -129,7 +162,7 @@ def compute_polarization(user_df: pd.DataFrame) -> pd.DataFrame:
 
     df["polarization_weighted"] = df["polarization_raw"] * df["tweet_count_weight"]
 
-    # re normalize the
+    # re normalise the
     min_p = df["polarization_weighted"].min()
     max_p = df["polarization_weighted"].max()
     df["polarization_weighted"] = (

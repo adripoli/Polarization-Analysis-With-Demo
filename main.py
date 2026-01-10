@@ -1,4 +1,4 @@
-# main py runs
+# main py Orchestrates
 
 import argparse
 import os
@@ -13,7 +13,7 @@ from model                   import BERTweetStanceClassifier
 
 
 def get_device() -> torch.device:
-    """gpu if we've"""
+    """Use GPU if"""
     if torch.cuda.is_available():
         device = torch.device("cuda")
         print(f"Using GPU: {torch.cuda.get_device_name(0)}")
@@ -25,7 +25,7 @@ def get_device() -> torch.device:
 
 
 def load_saved_model(device: torch.device) -> BERTweetStanceClassifier:
-    """loads a model"""
+    """Load a previously"""
     path = os.path.join(MODEL_DIR, "best_model.pt")
     if not os.path.exists(path):
         raise FileNotFoundError(
@@ -39,36 +39,36 @@ def load_saved_model(device: torch.device) -> BERTweetStanceClassifier:
     return model
 
 
-def main(skip_training: bool = False):
+def main(skip_training: bool = False, rebuild_cache: bool = False):
     print("=" * 60)
     print("  Political Polarization Pipeline")
     print("=" * 60)
 
     device = get_device()
 
-    # stage 0 clean
-    full_df, filtered_df = load_and_clean()
+    # Stage 0 Clean
+    full_df, filtered_df = load_and_clean(use_cache=not rebuild_cache)
 
-    # stage 3 train
+    # Stage 3 Train
     if skip_training:
         model = load_saved_model(device)
     else:
         model = train(full_df, device)
 
-    # stage 3 inference
+    # Stage 3 inference
     scored_df = run_inference(filtered_df, model, device)
 
-    # stages 4 5
+    # Stages 4 5
     user_df = aggregate_users(scored_df)
     user_df = compute_polarization(user_df)
 
-    # save user scores
+    # Save user scores
     os.makedirs("outputs/", exist_ok=True)
     user_scores_path = os.path.join("outputs/", "user_polarization_scores.csv")
     user_df.to_csv(user_scores_path, index=False)
     print(f"\n  User scores saved to {user_scores_path}")
 
-    # stage 6 population
+    # Stage 6 Population
     gmm_stats = run_population_analysis(user_df)
 
     print("\n" + "=" * 60)
@@ -87,5 +87,13 @@ if __name__ == "__main__":
         action="store_true",
         help="Load a saved model from disk instead of fine-tuning",
     )
+    parser.add_argument(
+        "--rebuild-cache",
+        action="store_true",
+        help="Ignore the cached Stage 0 output and re-run cleaning + langdetect",
+    )
     args = parser.parse_args()
-    main(skip_training=args.skip_training)
+    main(
+        skip_training=args.skip_training,
+        rebuild_cache=args.rebuild_cache,
+    )

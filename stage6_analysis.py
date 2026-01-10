@@ -1,4 +1,4 @@
-# stage6_analysis py stage
+# stage6_analysis py Stage
 
 import os
 import numpy as np
@@ -18,10 +18,10 @@ def _ensure_output_dir():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
-# 1 stance histogram
+# 1 Stance histogram
 
 def plot_stance_histogram(user_df: pd.DataFrame) -> None:
-    """plots the distribution"""
+    """Plot the distribution"""
     _ensure_output_dir()
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -48,11 +48,21 @@ def plot_stance_histogram(user_df: pd.DataFrame) -> None:
     print(f"  Saved: {path}")
 
 
-# 2 gaussian mixture
+# 2 Gaussian Mixture
 
 def fit_gmm(user_df: pd.DataFrame) -> dict:
-    """fits a GMM"""
+    """Fit a Gaussian"""
     _ensure_output_dir()
+
+    if len(user_df) < 2:
+        raise RuntimeError(
+            f"Cannot fit GMM: user_df has {len(user_df)} rows. "
+            f"This usually means the spam filter dropped every user — "
+            f"check Stage 4 output for 'Retained ... users'. Common cause: "
+            f"the classifier is collapsing on the Spam class. See "
+            f"stage3_training.py class-weight cap and config.py "
+            f"MIN_CLASSIFIER_CONFIDENCE / SPAM_USER_THRESHOLD."
+        )
 
     X = user_df["mean_stance"].values.reshape(-1, 1)
 
@@ -74,7 +84,7 @@ def fit_gmm(user_df: pd.DataFrame) -> dict:
     stds   = stds[order]
     weights = weights[order]
 
-    # overlap coefficient numerically
+    # overlap coefficient Numerically
     from scipy.stats import norm as scipy_norm
     x_range = np.linspace(-1.5, 1.5, 2000)
     pdf0 = weights[0] * scipy_norm.pdf(x_range, means[0], stds[0])
@@ -144,10 +154,10 @@ def fit_gmm(user_df: pd.DataFrame) -> dict:
     return stats
 
 
-# 3 polarization vs
+# 3 Polarization vs
 
 def plot_polarization_vs_activity(user_df: pd.DataFrame) -> None:
-    """scatter of polarization"""
+    """Scatter plot of"""
     _ensure_output_dir()
 
     r, p = pearsonr(user_df["tweet_count"], user_df["polarization_weighted"])
@@ -184,10 +194,10 @@ def plot_polarization_vs_activity(user_df: pd.DataFrame) -> None:
     print(f"  Pearson r = {r:.3f}  (p = {p:.4f})")
 
 
-# 4 save summary
+# 4 Save summary
 
 def save_results(user_df: pd.DataFrame, gmm_stats: dict) -> None:
-    """saves the full"""
+    """Save the full"""
     _ensure_output_dir()
 
     user_path = os.path.join(OUTPUT_DIR, "user_polarization_scores.csv")
@@ -202,7 +212,7 @@ def save_results(user_df: pd.DataFrame, gmm_stats: dict) -> None:
 # main entry point
 
 def run_population_analysis(user_df: pd.DataFrame) -> dict:
-    """runs all the"""
+    """Run all Stage"""
     print("\n=== Stage 6: Population-Level Analysis ===")
 
     plot_stance_histogram(user_df)

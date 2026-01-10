@@ -1,9 +1,9 @@
 # requirements.txt
-# install with: pip install -r requirements.txt
+# Install with: pip install -r requirements.txt
 #
-# for GPU support install pytorch separately from https://pytorch.org,
-# grab whatever matches your CUDA version. CPU-only: pip install torch
-# torchvision torchaudio
+# For GPU support, install PyTorch separately from https://pytorch.org
+# and choose the version matching your CUDA version.
+# CPU-only example: pip install torch torchvision torchaudio
 
 torch>=2.0.0
 transformers>=4.35.0
@@ -15,3 +15,4 @@ scipy>=1.11.0
 matplotlib>=3.7.0
 emoji>=2.8.0
 tqdm>=4.65.0
+langdetect>=1.0.9

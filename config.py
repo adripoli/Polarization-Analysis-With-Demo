@@ -1,43 +1,56 @@
-# config py all
+# config py Central
 
-# paths
+# Paths
 TRUMP_CSV      = "trump_tweets.csv"
 BIDEN_CSV      = "biden_tweets.csv"
 OUTPUT_DIR     = "outputs/"
 MODEL_DIR      = "model/bertweet_finetuned/"   # saved after fine
+STAGE0_CACHE   = "outputs/cache/stage0_cleaned.pkl"   # cached clean lang
 
-# column names expected
+# Column names expected
 COL_USER    = "user_id"
 COL_TEXT    = "tweet"
 COL_TWEET   = "tweet_id"
 COL_TIME    = "created_at"
 
-# stage 0 cleaning
-MIN_TWEETS_PER_USER = 3       # users below this
+# Stage 0 Cleaning
+MIN_TWEETS_PER_USER = 3       # users with fewer
+FILTER_LANGUAGE     = "en"     # ISO 639 1
 
-# stage 1 2
+# Stage 1 2
 BERTWEET_MODEL  = "vinai/bertweet-base"
 MAX_LENGTH      = 128          # max tokens per
-BATCH_SIZE      = 32           # drop to 16
+BATCH_SIZE      = 32           # reduce to 16
 
-# stage 3 classification
+# Stage 3 Classification
 MANUAL_LABELS_CSV = "data/manual_labels.csv"   # set to None
 MANUAL_LABEL_WEIGHT = 5        # repeat manual samples
-NUM_LABELS      = 3            # 0 pro biden
-HIDDEN_DIM      = 256          # size of the
+NUM_LABELS      = 3            # 0 Pro Biden
+HIDDEN_DIM      = 256          # intermediate layer size
 DROPOUT         = 0.3
-LEARNING_RATE   = 2e-5
-EPOCHS          = 3
+LEARNING_RATE   = 2e-5         # encoder LR pretrained
+HEAD_LEARNING_RATE = 1e-4      # classifier head LR
+EPOCHS          = 6            # max epochs early
+EARLY_STOPPING_PATIENCE = 2    # stop if val
 TRAIN_SPLIT     = 0.8          # 80 train 20
+LABEL_SMOOTHING = 0.1          # softens targets to
+POOLING         = "mean"       # mean masked mean
+USE_AMP         = True         # mixed precision training
+NUM_WORKERS     = 0            # DataLoader workers bump
+INFERENCE_BATCH_SIZE = 64      # larger than train
 
-# stage 4 spam
-SPAM_USER_THRESHOLD = 0.5      # users with more
+# Stage 4 Spam
+SPAM_USER_THRESHOLD = 0.5      # users with this
 
-# stage 5 polarization
+# Rule based spam
+MIN_CONTENT_WORDS          = 5     # tweets with fewer
+MIN_CLASSIFIER_CONFIDENCE  = 0.55  # if max P_Biden
+
+# Stage 5 Polarization
 WEIGHT_STD          = 0.6
 WEIGHT_ENTROPY      = 0.2
 WEIGHT_CONSISTENCY  = 0.2
 
-# stage 6 population
-GMM_COMPONENTS  = 2            # expecting two clusters
+# Stage 6 Population
+GMM_COMPONENTS  = 2            # we expect two
 HISTOGRAM_BINS  = 80

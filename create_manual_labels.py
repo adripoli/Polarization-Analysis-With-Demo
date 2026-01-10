@@ -3,7 +3,7 @@ import re
 import os
 
 def clean_tweet(text):
-    """strip urls mentions"""
+    """Clean tweet text"""
     text = str(text)
     text = re.sub(r'http\S+|www\S+', '', text)
     text = re.sub(r'@\w+', '', text)
@@ -12,7 +12,7 @@ def clean_tweet(text):
     return text
 
 def create_manual_labels():
-    """grabs the first"""
+    """Extract first 500"""
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
     trump_csv = os.path.join(base_dir, "trump_tweets.csv")
@@ -21,7 +21,7 @@ def create_manual_labels():
 
     os.makedirs(os.path.dirname(output_csv), exist_ok=True)
 
-    # load data
+    # Load data
     print("Loading tweets...")
     trump_df = pd.read_csv(trump_csv, nrows=500)
     biden_df = pd.read_csv(biden_csv, nrows=500)
@@ -29,24 +29,24 @@ def create_manual_labels():
     print(f"  Trump tweets loaded: {len(trump_df)}")
     print(f"  Biden tweets loaded: {len(biden_df)}")
 
-    # build the labels
+    # Create manual labels
     manual_labels = []
 
-    # trump tweets label
+    # Trump tweets label
     print("\nProcessing Trump tweets...")
     for idx, row in trump_df.iterrows():
         cleaned_text = clean_tweet(row['tweet'])
-        if cleaned_text:  # skip if empty
+        if cleaned_text:  # only add if
             manual_labels.append({
                 'cleaned_text': cleaned_text,
                 'label': 1
             })
 
-    # biden tweets label
+    # Biden tweets label
     print("Processing Biden tweets...")
     for idx, row in biden_df.iterrows():
         cleaned_text = clean_tweet(row['tweet'])
-        if cleaned_text:  # skip if empty
+        if cleaned_text:  # only add if
             manual_labels.append({
                 'cleaned_text': cleaned_text,
                 'label': 0
@@ -54,7 +54,7 @@ def create_manual_labels():
 
     result_df = pd.DataFrame(manual_labels)
 
-    # save it
+    # Save to CSV
     result_df.to_csv(output_csv, index=False)
 
     print(f"\n=== Manual Labels Created ===")
