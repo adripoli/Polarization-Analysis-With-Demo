@@ -40,7 +40,7 @@ political_polarization/
 pip install -r requirements.txt
 ```
 
-for GPU training grab the CUDA-matched pytorch build from [pytorch.org](https://pytorch.org) separately. CPU-only works but it's slow - use google colab for the training step if you can.
+for GPU training grab the CUDA-matched pytorch build from [pytorch.org](https://pytorch.org) separately.
 
 ## Usage
 
