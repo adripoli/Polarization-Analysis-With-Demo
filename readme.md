@@ -1,6 +1,6 @@
 # Political Polarization Pipeline
 
-basically an ML pipeline that tries to measure how polarized twitter/X users are. fine-tunes [BERTweet](https://huggingface.co/vinai/bertweet-base) on a bunch of `#trump` and `#joebiden` tweets, scores each user on a stance axis, then measures how split the population is with a Gaussian Mixture Model.
+ML pipeline that tries to measure how polarized twitter/X users are. fine-tunes [BERTweet](https://huggingface.co/vinai/bertweet-base) on a bunch of `#trump` and `#joebiden` tweets, scores each user on a stance axis, then measures how split the population is with a Gaussian Mixture Model.
 
 ## What It Actually Does
 
