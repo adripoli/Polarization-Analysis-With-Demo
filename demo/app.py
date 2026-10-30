@@ -1,7 +1,8 @@
 # demo/app.py
 # live demo of the polarization pipeline. one tweet goes through every version
 # (Marks 1-3 are the actual old code from git, Mark 4 is a retrain of e554bad,
-# Final is the model in ../model) so you can watch each one get it right or wrong.
+# Old final is the collapsed checkpoint, Mark 7 is the fix) so you can watch each
+# one get it right or wrong.
 #
 #   python demo/app.py                 -> opens the web demo at http://127.0.0.1:7860
 #   python demo/app.py --share         -> same, plus a temporary public link
@@ -20,7 +21,8 @@ MARK_INFO = {
     "Mark 2": "+ negative adjectives flip the score (22f45be)",
     "Mark 3": "+ adjectives weighted by distance to the keyword (a2f78b5)",
     "Mark 4": "fine-tuned BERTweet on ~730 hand labels (e554bad, retrained)",
-    "Final": "BERTweet + weak labels + hand labels x5 (saved final model)",
+    "Old final": "BERTweet + source-file labels + hand labels x5 (collapsed checkpoint)",
+    "Mark 7": "BERTweet + side-picking hashtags, names balanced, hand labels x20",
 }
 
 
@@ -43,7 +45,7 @@ def _load_rules(name):
 RULES = {f"Mark {i}": _load_rules(f"mark{i}") for i in (1, 2, 3)}
 
 
-# ── Mark 4 + Final: the two BERTweet models (loaded lazily, they're big) ───
+# ── Mark 4, Old final, Mark 7: the BERTweet models (lazy, they're big) ─────
 _models = {}
 
 
@@ -73,6 +75,16 @@ def _final():
     return _models["fin"]
 
 
+def _mark7():
+    if "m7" not in _models:
+        import torch
+        import model as fm
+        net = fm.BERTweetStanceClassifier()
+        net.load_state_dict(torch.load(os.path.join(ROOT, "model", "mark7", "best_model.pt"), map_location="cpu"))
+        _models["m7"] = (net.to(_device()).eval(), fm)
+    return _models["m7"]
+
+
 def _clean_mark4(t):
     # same cleaning create_manual_labels.py used for Mark 4's training data
     t = re.sub(r"http\S+|www\S+", "", str(t)); t = re.sub(r"@\w+", "", t); t = t.replace("#", "")
@@ -84,13 +96,20 @@ def _clean_final(t):
     return clean_text(str(t))
 
 
+def _clean_mark7(t):
+    from stance_tags import model_text
+    return model_text(t)
+
+
+LOADERS = {"Mark 4": (_mark4, _clean_mark4), "Old final": (_final, _clean_final), "Mark 7": (_mark7, _clean_mark7)}
+
+
 def model_probs(which, texts):
-    """P(Biden), P(Trump) for a list of tweets. Final also has a spam column
-    but that head collapsed in the saved checkpoint, so it's ignored here and
-    the stance is renormalised over the two political classes like the pipeline does"""
+    """P(Biden), P(Trump) for a list of tweets. the spam column gets ignored and
+    stance is renormalised over the two political classes, same as the pipeline"""
     import torch
-    net, mod = _mark4() if which == "Mark 4" else _final()
-    clean = _clean_mark4 if which == "Mark 4" else _clean_final
+    load, clean = LOADERS[which]
+    net, mod = load()
     tok = mod.load_tokenizer()
     out = []
     with torch.no_grad():
@@ -111,7 +130,7 @@ def all_marks(text):
         hits = sorted({k for k in kws if k in low})
         res[m] = dict(side={1: "Trump", -1: "Biden", 0: "no call"}[s], conf=None,
                       why=("keywords: " + ", ".join(hits)) if hits else "no keyword found")
-    for m in ("Mark 4", "Final"):
+    for m in LOADERS:
         pb, pt = model_probs(m, [text])[0]
         res[m] = dict(side="Trump" if pt > pb else "Biden", conf=float(max(pb, pt)),
                       why=(f"P(Trump) = {pt:.3f}, P(Biden) = {pb:.3f}" if abs(pt - pb) < 0.05
@@ -154,14 +173,14 @@ def tab_one(text):
 
 # ── tab 2: score a whole user with the final formula ──────────────────────
 POP = pd.read_csv(os.path.join(HERE, "data", "population.csv"))
-MAX_STD = 0.8017722964286804  # biggest per-user spread in the full 2nd run
+MAX_STD = 0.945253312587738  # biggest per-user spread in the Mark 7 run
 
 
 def tab_user(block):
     tweets = [l.strip() for l in str(block).splitlines() if l.strip()]
     if len(tweets) < 2:
         return "<i>Paste at least 2 tweets, one per line.</i>", None
-    p = model_probs("Final", tweets)
+    p = model_probs("Mark 7", tweets)
     stance = p[:, 1] - p[:, 0]
     ent = -(p * np.log2(np.clip(p, 1e-12, 1))).sum(1)  # same binary entropy as stage4_5
     mean_entropy = 1 - ent.mean()
@@ -173,13 +192,11 @@ def tab_user(block):
                    f"font-weight:700'>{s:+.2f}</td></tr>" for t, s in zip(tweets, stance))
     dup = len(set(tweets)) == 1
     warn = ("<p style='color:#b3501f'><b>Every tweet is identical.</b> Spread is zero, so Mark 4 would rank this account "
-            "as maximally polarized. Mark 5's dedupe collapses it to 1 tweet and it drops out. And notice the model "
-            "still picks a side for what is basically an ad: it has no working spam detector, which is the next "
-            "thing on the list.</p>") if dup else ""
+            "as maximally polarized. Mark 5's dedupe collapses it to 1 tweet and it drops out.</p>") if dup else ""
     html = (f"{warn}<p><b>Mean stance:</b> {stance.mean():+.2f} &nbsp; <b>Spread (std):</b> {std:.2f} &nbsp; "
             f"<b>Consistency:</b> {consistency:.0%} &nbsp; <b>Model confidence:</b> {mean_entropy:.2f}</p>"
             f"<p style='font-size:18px'><b>Polarization score: {raw:.2f}</b> &nbsp;→&nbsp; more polarized than "
-            f"<b>{pct:.0f}%</b> of the 30,525 real users from the full run</p>"
+            f"<b>{pct:.0f}%</b> of the {len(POP):,} real users from the Mark 7 run</p>"
             f"<table style='font-size:13px'><tr><th align=left>tweet</th><th>stance</th></tr>{rows}</table>")
     return html, _pop_plot(float(stance.mean()))
 
@@ -193,7 +210,7 @@ def _pop_plot(user_mean):
     ax.text(user_mean, ax.get_ylim()[1] * 0.92, "  this user", color="#0b0b0b", fontsize=9,
             ha="left" if user_mean < 0.6 else "right")
     ax.set_xlabel("mean stance  (-1 = pro-Biden, +1 = pro-Trump)"); ax.set_yticks([])
-    ax.set_title("Where they'd sit among the 30,525 users", loc="left", fontsize=10, fontweight="bold")
+    ax.set_title(f"Where they'd sit among the {len(POP):,} users", loc="left", fontsize=10, fontweight="bold")
     for s in ("top", "right", "left"):
         ax.spines[s].set_visible(False)
     fig.tight_layout()
@@ -244,18 +261,18 @@ _EX = json.load(open(os.path.join(HERE, "data", "example_users.json")))
 NL = chr(10)  # newline, kept out of string literals on purpose
 USER_EXAMPLES = [NL.join(_EX["trump"]), NL.join(_EX["biden"]),
                  NL.join(["Get your official election 2020 shirts now at our store!"] * 4)]
-HONEST = ("**Heads up:** the models learned from ~1,000 hand-labeled tweets taken from a narrow slice of the data. "
-          "On held-out tweets like those they're right 76-80% of the time. On 12 tweets I wrote myself, both got 7 "
-          "right, so typing your own is a good way to see where they break. The saved final model is the worse one "
-          "here: its spam head collapsed, so it snaps to one of about two answers (like 98% Biden) based on the "
-          "style of the tweet, not what it says. Mark 4 is the one actually reading your tweet.")
+HONEST = ("**Why Mark 7 exists:** Mark 4 learned a shortcut. On 2020 Twitter most tweets attack the other side, so it "
+          "figured \"mentions Biden = Trump fan\". Attack tweets came out fine and \"I love Biden\" came out 80% Trump. "
+          "The old final model was worse: its spam head collapsed, so it snapped to about two answers. Mark 7 trains on "
+          "side-picking hashtags with the tag removed and evens out who's mentioned, so a name alone tells it nothing. "
+          "Try it, it's still not perfect.")
 
 
 def build_ui():
     import gradio as gr
     with gr.Blocks(title="Polarization Pipeline demo") as ui:
         gr.Markdown("# Polarization Pipeline: live demo\nOne tweet through every version I built. Marks 1-3 are the "
-                    "real old code from git; Mark 4 and Final are BERTweet models.")
+                    "real old code from git; Mark 4, Old final and Mark 7 are BERTweet models.")
         with gr.Tab("1. One tweet, every Mark"):
             box = gr.Textbox(label="Tweet", lines=2, placeholder="Type any election tweet...")
             go = gr.Button("Run through every Mark", variant="primary")

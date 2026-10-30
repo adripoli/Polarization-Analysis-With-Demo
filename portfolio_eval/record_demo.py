@@ -4,7 +4,7 @@ from playwright.sync_api import sync_playwright
 
 OUT = sys.argv[1]
 VIDEO = "--video" in sys.argv
-URL = "http://127.0.0.1:7860/"
+URL = os.environ.get("DEMO_URL", "http://127.0.0.1:7860/")
 os.makedirs(OUT, exist_ok=True)
 
 
@@ -42,12 +42,14 @@ with sync_playwright() as p:
     # tab 1
     box = page.get_by_label("Tweet")
     run = page.get_by_role("button", name="Run through every Mark")
-    caps = ["The bug that started Mark 2: “MAGA” makes Mark 1 call this pro-Trump. Mark 2's adjective flip fixes it.",
+    caps = ["The bug that started Mark 2: “MAGA” makes Mark 1 call this pro-Trump. Mark 2's flip fixes it. Mark 7 still misses this one.",
             "The regression: Mark 1 got this right, Mark 2 broke it, Mark 3's word-distance weighting fixed it again.",
-            "Sarcasm: every rule-based version gives up. Mark 4's model still misreads it; the final model gets it right."]
+            "Sarcasm: every rule-based version gives up. Mark 4 misreads it. Mark 7 gets it right.",
+            "Why Mark 7 exists: Mark 4 learned “mentions Biden = Trump fan”. Mark 7 evened out who's mentioned, so it reads this right."]
     for i, t in enumerate(["Those MAGA people are crazy",
                            "Incompetent. Just like everyone else involved in the trump clown car. VoteBiden",
-                           "Ugh, of course the MAGA crowd thinks this is brilliant. Great job guys. VoteBiden"]):
+                           "Ugh, of course the MAGA crowd thinks this is brilliant. Great job guys. VoteBiden",
+                           "I love Biden"]):
         page.evaluate("document.querySelectorAll('.pp-card').forEach(e => e.remove())")
         caption(page, caps[i])
         box.fill("")
@@ -61,14 +63,14 @@ with sync_playwright() as p:
 
     # tab 2
     page.evaluate('window.scrollTo(0, 0)')
-    caption(page, "Score a whole user with the final polarization formula, and see where they'd sit among 30,525 real users.")
+    caption(page, "Score a whole user with the final polarization formula, and see where they'd sit among 27,965 real users.")
     page.get_by_role("tab", name="2. Score a user").click(); pause(1.5)
     ubox = page.get_by_label("A user's tweets, one per line")
     ugo = page.get_by_role("button", name="Score this user")
     import json
     ex = json.load(open(r"C:\Users\Asus Gaming\Desktop\political_polarization\demo\data\example_users.json"))
     users = ["\n".join(ex["trump"]), "\n".join(["Get your official election 2020 shirts now at our store!"] * 4)]
-    ucaps = ["A user made of 8 real pro-Trump test tweets. The model gets 5 of 8 right, so they land just right of center.",
+    ucaps = ["A user made of 8 real pro-Trump test tweets. Mark 7 gets 7 of 8 right, so they land well right of center.",
              "A copy-paste bot: zero spread, so Mark 4's ranking called it the most polarized. Mark 5's dedupe removes it."]
     for i, u in enumerate(users):
         caption(page, ucaps[i])

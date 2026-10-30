@@ -26,7 +26,7 @@ card(os.path.join(tmp, "title.png"), [
     ("Live demo: one tweet through every version I built", 24, "#2a78d6"),
     ("Adrian Polishchuk Carrillo", 20, "#8a8984")])
 card(os.path.join(tmp, "end.png"), [
-    ("Held-out accuracy: 8% (Mark 1) → 76% (Mark 4) → 80% (final)", 30, "#0b0b0b"),
+    ("Held-out accuracy: 8% (Mark 1) → 76% (Mark 4) → 87% (Mark 7)", 30, "#0b0b0b"),
     ("Code + full commit history: github.com/adripoli/Polarization-on-Social-Media", 22, "#52514e"),
     ("Run it yourself:  python demo/app.py", 22, "#2a78d6")])
 
