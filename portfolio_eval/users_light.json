@@ -1,0 +1,29 @@
+{
+ "Mark 4": {
+  "tweets": 1747818,
+  "users_2plus": 118170,
+  "all_identical_users": 22347,
+  "all_identical_share": 0.1891089108910891,
+  "all_identical_tweets": 45696,
+  "mostly_non_english_users": null,
+  "mostly_non_english_share": null
+ },
+ "Mark 5": {
+  "tweets": 1305322,
+  "users_2plus": 86573,
+  "all_identical_users": 0,
+  "all_identical_share": 0.0,
+  "all_identical_tweets": 0,
+  "mostly_non_english_users": 23382,
+  "mostly_non_english_share": 0.2700842063922932
+ },
+ "Mark 6": {
+  "tweets": 954712,
+  "users_2plus": 60862,
+  "all_identical_users": 0,
+  "all_identical_share": 0.0,
+  "all_identical_tweets": 0,
+  "mostly_non_english_users": 0,
+  "mostly_non_english_share": 0.0
+ }
+}

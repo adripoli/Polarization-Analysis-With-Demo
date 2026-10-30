@@ -1,0 +1,26 @@
+{
+ "test_heldout": {
+  "n": 169,
+  "n_pol": 155,
+  "n_spam": 14,
+  "pol_acc": 0.8,
+  "all3_acc_classifier": 0.08284023668639054,
+  "all3_acc_rules": 0.08284023668639054,
+  "spam_recall_classifier": 1.0,
+  "spam_recall_rules": 1.0,
+  "political_flagged_as_spam_rules": 1.0,
+  "pol_acc_kept": NaN
+ },
+ "train_manual": {
+  "n": 705,
+  "n_pol": 648,
+  "n_spam": 57,
+  "pol_acc": 0.8935185185185185,
+  "all3_acc_classifier": 0.08085106382978724,
+  "all3_acc_rules": 0.08085106382978724,
+  "spam_recall_classifier": 1.0,
+  "spam_recall_rules": 1.0,
+  "political_flagged_as_spam_rules": 1.0,
+  "pol_acc_kept": NaN
+ }
+}

@@ -1,0 +1,8 @@
+# big stuff that lives outside git
+*.pt
+model/
+trump_tweets.csv
+biden_tweets.csv
+outputs/cache/
+__pycache__/
+*.pkl

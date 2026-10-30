@@ -1,0 +1,2 @@
+# extra deps for the web demo only (the pipeline itself uses ../requirements.txt)
+gradio>=6.0

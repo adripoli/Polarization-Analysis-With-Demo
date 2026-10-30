@@ -61,6 +61,20 @@ stuff lands in `outputs/`:
 - `polarization_vs_activity.png` - scatter + pearson correlation
 - `gmm_summary.csv` - cluster means, stds, weights, overlap coefficient
 
+## Demo
+
+there's a live demo in [`demo/`](demo/) that runs one tweet through every version of the pipeline side by side - marks 1-3 are the actual old keyword code from git, mark 4 and final are the BERTweet models. so you can literally watch each version get it right or wrong.
+
+```bash
+pip install -r demo/requirements.txt
+python demo/app.py                    # web demo at http://127.0.0.1:7860
+python demo/app.py --cli "your tweet" # or just print every version's call
+```
+
+three tabs: one tweet through every mark, score a whole user with the real polarization formula, and grade the models yourself on random held-out tweets. needs the model weights in `model/` (too big for git). more in [demo/README.md](demo/README.md).
+
+![demo](demo/demo_screenshot.png)
+
 ## Configuration
 
 every hyperparameter (model, batch size, epochs, thresholds, scoring weights, etc) lives in [config.py](config.py). the important ones:

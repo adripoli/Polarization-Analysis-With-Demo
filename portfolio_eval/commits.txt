@@ -1,0 +1,46 @@
+da08515|2025-10-10T14:50:35Z|Scaffold project, load raw tweet CSVs
+00343d9|2025-10-10T15:41:11Z|Add first-pass keyword lists for trump/biden hashtags
+0712dd3|2025-10-10T16:31:47Z|Score tweets +1/-1/0 based on keyword matches
+f96372b|2025-10-10T17:22:22Z|Note the keyword-vs-sentiment gap
+c751606|2025-10-10T18:12:58Z|Aggregate scores per user and export to CSV
+1ba92a1|2025-10-10T19:03:34Z|Keyword scoring for pro-trump/pro-biden tweets
+705d7d1|2025-10-10T19:32:55Z|Note the keyword-mockery bug in score_tweet
+112781e|2025-10-10T20:02:16Z|Add adjectives.py, flip score on negative adjective match
+5fd63dd|2025-10-10T20:31:38Z|Bulk out keywords.py, surfaces a new flip bug
+05dec46|2025-10-10T21:00:59Z|Add POSITIVE_ADJECTIVES to avoid flipping ambiguous tweets
+22f45be|2025-10-10T21:30:21Z|Flip keyword score when a negative adjective shows up
+9f440ef|2025-10-11T08:56:06Z|Add tokenizer and word-index helpers for adjective distance
+971c880|2025-10-11T20:21:52Z|First pass at weighting adjectives by distance
+0c80a29|2025-10-12T07:47:38Z|Fix div-by-zero when adjective sits right next to the keyword
+6970d94|2025-10-12T19:13:24Z|Cap how far an adjective can be attributed to a keyword
+a37cba4|2025-10-13T06:39:10Z|Vote per keyword hit instead of once per tweet
+a2f78b5|2025-10-13T18:04:56Z|Weight adjectives by how close they are to the keyword
+5343537|2025-10-19T15:01:05Z|Spike vinai/bertweet-base on a few sample tweets
+3aa95fd|2025-10-25T11:57:14Z|Add create_manual_labels.py to bootstrap a labeled sample
+7f428f9|2025-10-31T08:53:23Z|Hand-label the manual labels csv
+0ac85e3|2025-11-06T05:49:32Z|Add model.py loading the BERTweet tokenizer
+dd38be1|2025-11-12T02:45:41Z|Fix BERTweet tokenizer bug, add the classifier head
+bd4d639|2025-11-17T23:41:50Z|Add train.py, only train the classifier head
+f6a4f87|2025-11-23T20:37:59Z|Unfreeze the encoder, add device handling and a train/val split
+e554bad|2025-11-29T17:34:08Z|Swap the keyword pipeline for a fine-tuned BERTweet classifier
+07422d9|2025-11-30T22:06:08Z|Note that the most 'polarized' users are mostly spam
+1503a65|2025-12-02T02:38:09Z|Drop tweets under 20 characters before scoring
+e342338|2025-12-03T07:10:10Z|Replace char-count filter with a word-count filter in clean.py
+31261c1|2025-12-04T11:42:11Z|Dedupe repeated (user, text) tweets and wire clean.py into train.py
+27dc538|2025-12-05T16:14:12Z|Drop short/duplicate tweets before scoring
+4b58e61|2025-12-06T14:48:24Z|Note that some garbage stance scores trace back to non-English tweets
+6bd0bda|2025-12-07T13:22:36Z|Filter out non-English tweets with langdetect
+5faf6d8|2025-12-08T11:56:48Z|Fix langdetect crash on short tweets, move filter after the cheap checks
+8a5e937|2025-12-09T10:31:01Z|Drop non-english tweets before tokenizing
+f5a0e74|2025-12-10T02:21:12Z|Pull scattered constants out into config.py
+0a818e8|2025-12-10T18:11:24Z|Split clean.py into stage0_cleaning.py, add a MIN_TWEETS_PER_USER filter
+dcf788a|2025-12-11T10:01:35Z|Rename train.py to stage3_training.py
+ebcd5f4|2025-12-12T01:51:47Z|Import MAX_LENGTH/BATCH_SIZE from config instead of redefining them
+0c169a4|2025-12-12T17:41:58Z|Wire up the spam class instead of throwing those rows away
+1a7975d|2025-12-13T09:32:10Z|Renormalize stance over the political classes so spam mass stops diluting it
+b9b5278|2025-12-14T01:22:21Z|Add stage4_5_user_analysis.py, drop spam users using the classifier instead of a length/dedupe proxy
+c46e6a5|2025-12-14T17:12:33Z|Replace the 1/std polarization ranking with a weighted composite
+5525817|2025-12-15T09:02:45Z|refactor into staged pipeline (stage0-6), add spam class + population-level GMM analysis
+8ce8559|2026-07-30T13:31:29-04:00|Add MIT license
+97e2bf8|2026-08-26T19:26:14-04:00|Update copyright holder name in LICENSE file
+400da65|2026-09-06T19:47:46+02:00|Refine project description in readme.md
